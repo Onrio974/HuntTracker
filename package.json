@@ -1,0 +1,67 @@
+{
+  "name": "compteur-pokemon",
+  "productName": "Compteur Pokémon",
+  "version": "1.0.0",
+  "description": "Compteur de rencontres Pokémon (shiny / forme) avec suivi de pity, capture d'écran et OCR.",
+  "author": "Toi",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "dist": "electron-builder --win",
+    "package": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.tondomaine.compteurpokemon",
+    "productName": "Compteur Pokémon",
+    "copyright": "Copyright © 2026",
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "picker-preload.js",
+      "picker.html",
+      "index.html",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Compteur Pokémon",
+      "artifactName": "CompteurPokemon-Setup-${version}.${ext}",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "CompteurPokemon-Portable-${version}.${ext}"
+    }
+  }
+}
