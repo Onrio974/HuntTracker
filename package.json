@@ -25,6 +25,7 @@
   "build": {
     "appId": "com.tondomaine.compteurpokemon",
     "productName": "Compteur Pokémon",
+    "publish": null,
     "copyright": "Copyright © 2026",
     "asar": true,
     "files": [
