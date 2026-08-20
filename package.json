@@ -2,6 +2,7 @@
   "name": "compteur-pokemon",
   "productName": "Compteur Pokémon",
   "version": "1.0.0",
+  "desktopName": "compteur-pokemon.desktop",
   "description": "Compteur de rencontres Pokémon (shiny / forme) avec suivi de pity, capture d'écran et OCR.",
   "author": "Toi",
   "license": "UNLICENSED",
@@ -10,11 +11,15 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder --win --mac --linux",
     "dist": "electron-builder --win",
     "package": "electron-builder --win"
   },
   "devDependencies": {
-    "electron": "^33.0.0",
+    "electron": "^43.4.1",
     "electron-builder": "^26.15.3"
   },
   "build": {
@@ -49,6 +54,41 @@
           ]
         }
       ]
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "category": "public.app-category.utilities",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "Utility",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "syncDesktopName": true,
+      "synopsis": "Compteur de rencontres Pokémon avec OCR"
+    },
+    "dmg": {
+      "artifactName": "CompteurPokemon-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,

@@ -15,10 +15,24 @@ const { app, BrowserWindow, session, desktopCapturer, shell, dialog, ipcMain } =
 const path = require('path');
 const fs = require('fs');
 
-// Icône optionnelle : si build/icon.ico n'existe pas (pas encore fournie),
-// on ne casse rien — Electron utilisera son icône par défaut.
-const appIconPath = path.join(__dirname, 'build', 'icon.ico');
-const appIcon = fs.existsSync(appIconPath) ? appIconPath : undefined;
+// Icône optionnelle et multi-plateforme : Windows attend un .ico, macOS un
+// .icns, Linux un .png. On prend la première qui existe pour la plateforme
+// courante (avec repli sur les autres formats si besoin) ; si aucune n'est
+// présente, on ne casse rien — Electron utilisera son icône par défaut.
+function resolveAppIcon() {
+  const candidatesByPlatform = {
+    win32: ['icon.ico'],
+    darwin: ['icon.icns', 'icon.png'],
+    linux: ['icon.png', 'icon.ico']
+  };
+  const candidates = candidatesByPlatform[process.platform] || ['icon.png', 'icon.ico'];
+  for (const name of candidates) {
+    const candidatePath = path.join(__dirname, 'build', name);
+    if (fs.existsSync(candidatePath)) return candidatePath;
+  }
+  return undefined;
+}
+const appIcon = resolveAppIcon();
 
 // Sur Windows, ceci évite certains soucis de cache/GPU sur des configurations
 // matérielles particulières. Ne change rien au fonctionnement de l'app.
