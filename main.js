@@ -46,6 +46,18 @@ let pickerWindow = null;
 let savedNormalBounds = null;
 let isCompact = false;
 
+// Langue actuellement affichée dans index.html (fr/en/ko), transmise via
+// preload.js (voir controls:setLanguage ci-dessous). Sert à ouvrir le
+// sélecteur de capture d'écran (fenêtre gérée par main.js, indépendante
+// du DOM de la page) dans la même langue que le reste de l'app plutôt que
+// de la laisser figée en français.
+let currentAppLang = 'fr';
+const PICKER_WINDOW_TITLES = {
+  fr: 'Choisir une source de capture',
+  en: 'Choose a capture source',
+  ko: '캡처할 소스 선택'
+};
+
 // Taille de la fenêtre en mode compact (petit widget flottant, pratique pour
 // laisser l'app visible par-dessus une vidéo YouTube pendant qu'on farm).
 const COMPACT_WIDTH = 380;
@@ -134,6 +146,11 @@ ipcMain.handle('controls:setOpacity', (event, value) => {
   return clamped;
 });
 
+ipcMain.handle('controls:setLanguage', (event, lang) => {
+  if (lang === 'fr' || lang === 'en' || lang === 'ko') currentAppLang = lang;
+  return currentAppLang;
+});
+
 ipcMain.handle('controls:setCompact', (event, flag) => {
   if (!mainWindow) return false;
   const wantCompact = !!flag;
@@ -203,7 +220,7 @@ function showSourcePicker(sources) {
       minimizable: false,
       maximizable: false,
       autoHideMenuBar: true,
-      title: 'Choisir une source de capture',
+      title: PICKER_WINDOW_TITLES[currentAppLang] || PICKER_WINDOW_TITLES.fr,
       backgroundColor: '#071522',
       webPreferences: {
         preload: path.join(__dirname, 'picker-preload.js'),
@@ -221,6 +238,10 @@ function showSourcePicker(sources) {
     });
 
     pickerWindow.loadFile(path.join(__dirname, 'picker.html')).then(() => {
+      // Envoie la langue actuelle de l'app (fr/en/ko) AVANT les sources, pour
+      // que picker.html traduise son interface dès le premier rendu plutôt
+      // que d'afficher brièvement le français par défaut puis re-traduire.
+      pickerWindow.webContents.send('picker:lang', currentAppLang);
       // Envoie la liste des sources (id, nom, type, vignette en data URL) une
       // fois la page prête à les recevoir.
       const payload = sources.map(s => ({

@@ -1254,6 +1254,19 @@
 <div id="toast" class="toast"></div>
 
 <script>
+// Filet de sécurité global : logue toute erreur JS ou promesse rejetée non
+// interceptée ailleurs dans le code, plutôt que de laisser l'appli silencieuse
+// et potentiellement figée sans aucune trace exploitable. N'empêche pas
+// l'erreur d'exister (les protections spécifiques comme le try/catch de
+// render() restent la vraie ligne de défense), mais garantit qu'on a au
+// moins un log dans la console pour diagnostiquer un futur cas comme celui-ci.
+window.addEventListener('error', (e) => {
+  console.error('Erreur JS non interceptée :', e.error || e.message, e.filename ? `(${e.filename}:${e.lineno})` : '');
+});
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('Promesse rejetée non interceptée :', e.reason);
+});
+
 const STORAGE_KEY = 'pokemon-hunt-data';
 // Formes/événements disponibles pour le tracker "form alternative" et leur
 // dénominateur de probabilité (1/denom). Pinkan a un taux different des autres.
@@ -1987,9 +2000,28 @@ function getBestMatchingPokemonName(detectedName, threshold = 0.75) {
   return null;
 }
 
+// Petit utilitaire partagé : comme fetch() natif n'a pas de délai maximum
+// par défaut, une requête vers PokeAPI qui ne répond jamais (réseau filtré,
+// DNS qui traîne, portail captif, etc. — observé chez un utilisateur sous
+// Linux) restait auparavant "en attente" indéfiniment. Comme certaines de
+// ces requêtes étaient "await"ées en plein milieu du chargement initial ou
+// de render(), l'appli entière restait figée sur un écran vide pour
+// toujours, sans aucune erreur ni message. On borne maintenant chaque
+// requête réseau à un délai raisonnable : passé ce délai, on abandonne
+// proprement (comme un échec normal) plutôt que de bloquer l'affichage.
+async function fetchWithTimeout(url, ms = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function loadGlobalPokemonDatabase() {
   try {
-    const response = await fetch(POKEAPI_LIST_URL);
+    const response = await fetchWithTimeout(POKEAPI_LIST_URL);
     const data = await response.json();
     globalPokemonDatabase = data.results.map((p) => {
       const match = p.url.match(/\/pokemon\/(\d+)\/?$/);
@@ -2008,7 +2040,7 @@ async function loadGlobalPokemonDatabase() {
 async function fetchCaptureRate(nameOrId) {
   try {
     const cleanName = String(nameOrId).toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
-    const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${cleanName}`);
+    const res = await fetchWithTimeout(`https://pokeapi.co/api/v2/pokemon-species/${cleanName}`);
     if (!res.ok) return null;
     const data = await res.json();
     return typeof data.capture_rate === 'number' ? data.capture_rate : null;
@@ -2047,7 +2079,7 @@ async function fetchPokemonTypes(nameOrId) {
     const found = globalPokemonDatabase.find(p => p.name === cleanName || p.id === nameOrId);
     if (found && found.types && found.types.length > 0) return found.types;
 
-    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
+    const res = await fetchWithTimeout(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
     if (!res.ok) return ['normal'];
     const data = await res.json();
     const types = data.types.map(t => t.type.name);
@@ -2097,7 +2129,7 @@ async function fetchPokemonStats(nameOrId) {
     const found = globalPokemonDatabase.find(p => p.name === cleanName || p.id === nameOrId);
     if (found && found.stats) return found.stats;
 
-    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
+    const res = await fetchWithTimeout(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
     if (!res.ok) return null;
     const data = await res.json();
     const byKey = {};
@@ -2128,7 +2160,7 @@ async function fetchPokemonAbilities(nameOrId) {
     const found = globalPokemonDatabase.find(p => p.name === cleanName || p.id === nameOrId);
     if (found && found.abilities) return found.abilities;
 
-    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
+    const res = await fetchWithTimeout(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
     if (!res.ok) return null;
     const data = await res.json();
     const abilities = (data.abilities || [])
@@ -2138,6 +2170,69 @@ async function fetchPokemonAbilities(nameOrId) {
     return abilities;
   } catch (err) {
     return null;
+  }
+}
+
+// Enrichissement en arrière-plan des données PokeAPI (types, taux de
+// capture, stats, talents) d'un Pokémon nouvellement ajouté (ex: détecté
+// par l'OCR) et pas encore complet. C'était auparavant fait en plein milieu
+// de render(), en "await"ant chaque requête l'une après l'autre pour
+// CHAQUE Pokémon incomplet de la chasse — sur un réseau lent, hors-ligne,
+// ou filtré (rapporté par un utilisateur sous Linux dont l'appli s'est
+// figée sur un écran vide en croisant un Growlithe), ça bloquait
+// l'affichage entier, parfois indéfiniment. Ici, render() n'attend plus
+// rien : il affiche immédiatement ce qui est déjà en cache (avec des
+// valeurs de repli du genre "—" pour le reste, déjà gérées ailleurs dans
+// le code), pendant que l'enrichissement se fait de son côté et déclenche
+// un nouveau render() une fois terminé.
+const pokemonEnrichState = {}; // id du pokémon -> { inFlight, failedAt }
+const ENRICH_RETRY_COOLDOWN_MS = 60000; // pas de nouvelle tentative avant 1 min après un échec
+
+function pokemonNeedsEnrichment(x){
+  return (!x.types || x.types.length === 0) ||
+         (x.captureRate === null || x.captureRate === undefined) ||
+         !x.natureStats || !x.natureAbilities;
+}
+
+function enrichPokemonDataInBackground(h){
+  if (!h) return;
+  for (const x of h.pokemon) {
+    if (!pokemonNeedsEnrichment(x)) continue;
+    const st = pokemonEnrichState[x.id] || (pokemonEnrichState[x.id] = { inFlight: false, failedAt: null });
+    if (st.inFlight) continue;
+    if (st.failedAt && (Date.now() - st.failedAt) < ENRICH_RETRY_COOLDOWN_MS) continue;
+    st.inFlight = true;
+    (async () => {
+      let anyFailure = false;
+      try {
+        if (!x.types || x.types.length === 0) {
+          const types = await fetchPokemonTypes(x.name);
+          if (types && types.length) x.types = types; else anyFailure = true;
+        }
+        if (x.captureRate === null || x.captureRate === undefined) {
+          const rate = await fetchCaptureRate(x.name);
+          if (rate !== null && rate !== undefined) x.captureRate = rate; else anyFailure = true;
+        }
+        if (!x.natureStats) {
+          const stats = await fetchPokemonStats(x.name);
+          if (stats) x.natureStats = stats; else anyFailure = true;
+        }
+        if (!x.natureAbilities) {
+          const abilities = await fetchPokemonAbilities(x.name);
+          if (abilities) x.natureAbilities = abilities; else anyFailure = true;
+        }
+      } catch (err) {
+        anyFailure = true;
+      } finally {
+        st.inFlight = false;
+        st.failedAt = anyFailure ? Date.now() : null;
+        saveState();
+        // On ne relance l'affichage que si ce Pokémon existe toujours quelque
+        // part dans les chasses (il a pu être supprimé pendant l'attente).
+        const stillRelevant = state.hunts.some(hh => hh.pokemon.some(p => p.id === x.id));
+        if (stillRelevant) render();
+      }
+    })();
   }
 }
 
@@ -2893,7 +2988,16 @@ function pokemonEncounterRate(h, p){
 
 async function render(){
   if(!loaded) return;
-
+  // Tout le corps de render() est protégé par ce try/catch : cette fonction
+  // est rappelée à CHAQUE rencontre comptée (souvent en rafale avec la
+  // détection OCR), donc la moindre exception non interceptée quelque part
+  // dedans (donnée Pokémon inattendue, calcul qui échoue pour un cas
+  // particulier...) interrompait auparavant render() en plein milieu et
+  // laissait l'appli figée sur un écran vide, sans aucun message ni moyen
+  // de continuer à l'utiliser. On affiche maintenant un message d'erreur
+  // récupérable à la place, et l'app reste utilisable pour le reste
+  // (changer de chasse, etc.) plutôt que de rester bloquée indéfiniment.
+  try {
   const st = state.shinyTracker, ft = state.formTracker;
 
   document.getElementById('shinyTotalValue').innerHTML =
@@ -3061,25 +3165,15 @@ async function render(){
   // pity par Pokémon (voir bumpGlobalPity).
   const pFormFrozen = p && analysisType === 'FORME' && !isPokemonFormEligible(p, state.formShape);
 
-  for (let x of h.pokemon) {
-    if (!x.types || x.types.length === 0) {
-      x.types = await fetchPokemonTypes(x.name);
-    }
-    if (x.captureRate === null || x.captureRate === undefined) {
-      x.captureRate = await fetchCaptureRate(x.name);
-    }
-    if (!x.natureStats) {
-      // Sert uniquement de repli pour "Nature(s) recommandée(s)" quand ce
-      // Pokémon n'a pas de set compétitif documenté (voir
-      // computeHeuristicNatures) — évite l'affichage "N/A".
-      x.natureStats = await fetchPokemonStats(x.name);
-    }
-    if (!x.natureAbilities) {
-      // Sert au repli "set estimé" (nature + talent réel + rôle) de
-      // getRecommendedSetDetailsHtml — voir computeHeuristicSets.
-      x.natureAbilities = await fetchPokemonAbilities(x.name);
-    }
-  }
+  // Les données PokeAPI manquantes (types, taux de capture, stats, talents)
+  // sont récupérées en arrière-plan par enrichPokemonDataInBackground, qui
+  // relance render() une fois disponibles — on ne les attend plus ici, pour
+  // que l'affichage ne dépende jamais de la vitesse ou de la disponibilité
+  // du réseau (voir le commentaire sur cette fonction plus haut dans le
+  // fichier). Tant qu'elles ne sont pas arrivées, le reste de render() doit
+  // simplement composer avec des valeurs manquantes (déjà le cas : voir par
+  // ex. catchProbability et les affichages "—" pour captureRate/natures).
+  enrichPokemonDataInBackground(h);
 
   let pokemonAverage = 0;
   if (p && p.total > 0 && h.total > 0) {
@@ -3266,6 +3360,19 @@ async function render(){
       </div>`;
   }).join('');
 
+  // Le <video id="captureVideo"> ci-dessous (partage d'écran en direct pour
+  // l'OCR) fait partie du bloc régénéré par main.innerHTML juste après.
+  // Comme render() est appelé à CHAQUE rencontre comptée (très fréquent
+  // avec la détection automatique active), reconstruire ce <video> à partir
+  // d'une chaîne HTML détruit l'ancien élément et en crée un nouveau : le
+  // flux vidéo doit alors recharger ses métadonnées, et pendant ce court
+  // instant la vidéo reprend sa taille par défaut avant de retrouver sa
+  // vraie taille — d'où l'app qui "saute" verticalement à chaque comptage.
+  // On sauvegarde donc ici le nœud DOM live existant (pas juste le flux)
+  // pour le replacer tel quel après coup (voir plus bas), au lieu de
+  // laisser le HTML en recréer un vide.
+  const existingCaptureVideoEl = document.getElementById('captureVideo');
+
   main.innerHTML = `
     <div class="hunt-header">
       <div class="hunt-header-info">
@@ -3448,8 +3555,42 @@ async function render(){
     ${cards}
   `;
 
+  // Remet en place le <video> live existant (avec son flux déjà attaché et
+  // en cours de lecture) à la place du nouveau placeholder vide que le HTML
+  // ci-dessus vient de créer — voir le commentaire au-dessus de
+  // existingCaptureVideoEl. La lecture n'est ainsi jamais interrompue :
+  // aucun rechargement de métadonnées, donc plus de saut de mise en page.
+  if (existingCaptureVideoEl && existingCaptureVideoEl.srcObject && mediaStream) {
+    const freshCaptureVideoEl = document.getElementById('captureVideo');
+    if (freshCaptureVideoEl && freshCaptureVideoEl !== existingCaptureVideoEl) {
+      freshCaptureVideoEl.replaceWith(existingCaptureVideoEl);
+    }
+  }
+
   setupEventListeners(h);
   updateTimerDisplays();
+  } catch(err) {
+    // Voir le commentaire au début de render() : on n'atterrit ici que si
+    // quelque chose a levé une exception au lieu de la laisser planter
+    // silencieusement l'affichage. On logue le détail (utile si un jour
+    // quelqu'un peut voir la console), on prévient l'utilisateur, et on
+    // remplace la zone principale par un message récupérable plutôt que
+    // de la laisser vide — avec un bouton pour réessayer sans redémarrer
+    // toute l'application.
+    console.error('render() a échoué :', err);
+    showToast("Une erreur est survenue pendant l'affichage — réessaie ou redémarre l'app.", null);
+    const mainFallback = document.getElementById('mainArea');
+    if (mainFallback) {
+      mainFallback.innerHTML = `
+        <div class="empty-state">
+          <span class="cm">Une erreur est survenue pendant l'affichage de cette chasse.</span>
+          <div>Essaie de changer de chasse dans la liste, ou clique ci-dessous pour réessayer. Si le problème persiste, redémarre l'application.</div>
+          <button class="act primary" id="renderRetryBtn" style="margin-top:10px;">Réessayer</button>
+        </div>`;
+      const retryBtn = document.getElementById('renderRetryBtn');
+      if (retryBtn) retryBtn.onclick = () => render();
+    }
+  }
 }
 
 async function startCapture(){
@@ -5551,6 +5692,76 @@ function closeAllDropdownsExcept(exceptWrapId){
   });
 }
 
+/* ============ POSITIONNEMENT AUTO DES PANNEAUX DÉROULANTS ============
+   Chaque .boss-dropdown-panel s'ouvre par défaut collé au bord gauche de
+   son bouton (left:0, hérité du CSS). Sur une fenêtre étroite ou avec une
+   police/résolution différente (ex. certains environnements Linux), les
+   derniers boutons de la barre (Récolte, Donjon, Excavations...) peuvent
+   se retrouver proches du bord droit de la fenêtre : le panneau déborde
+   alors hors du cadre de l'app au lieu de rester dedans.
+   Cette fonction mesure, une fois le panneau rendu visible, s'il dépasse
+   le bord droit (ou gauche) de la fenêtre et corrige sa position en
+   l'ancrant depuis le bord opposé plutôt que de le laisser déborder.
+   Générique : s'applique à TOUS les .boss-dropdown-wrap (Boss, Méga
+   Gemmes, Quêtes, Excavations, Daily Quest, Récolte, Donjon, Membership,
+   Transit Pass, Safari, Langue), sans avoir à toucher chacun de leurs
+   gestionnaires de clic individuels. */
+function repositionDropdownPanel(wrap){
+  const panel = wrap.querySelector(':scope > .boss-dropdown-panel');
+  if (!panel) return;
+  // Réinitialise les overrides précédents avant de mesurer, pour ne pas
+  // accumuler un état obsolète entre deux ouvertures.
+  panel.style.left = '';
+  panel.style.right = '';
+  const margin = 8;
+  const rect = panel.getBoundingClientRect();
+  if (rect.width === 0 && rect.height === 0) return; // panneau pas encore affiché
+  const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+  if (rect.right > viewportWidth - margin) {
+    panel.style.left = 'auto';
+    panel.style.right = '0';
+    const rect2 = panel.getBoundingClientRect();
+    if (rect2.left < margin) {
+      // Le panneau ne tient ni ancré à gauche ni ancré à droite (fenêtre
+      // trop étroite pour sa largeur) : on le cale au plus près du bord
+      // gauche visible de la fenêtre plutôt que de le laisser déborder
+      // des deux côtés.
+      const wrapRect = wrap.getBoundingClientRect();
+      panel.style.right = 'auto';
+      panel.style.left = (margin - wrapRect.left) + 'px';
+    }
+  }
+}
+
+function repositionOpenDropdownPanels(){
+  document.querySelectorAll('.boss-dropdown-wrap.open').forEach(repositionDropdownPanel);
+}
+
+function initDropdownAutoPosition(){
+  // Un panneau nouvellement ouvert obtient la classe "open" de façon
+  // synchrone dans le gestionnaire de clic du bouton correspondant (voir
+  // les différentes fonctions setupXDropdown / setupLangDropdown) ; on
+  // observe donc les changements de classe pour repositionner le panneau
+  // juste après, sans avoir à modifier chacun de ces gestionnaires.
+  const observer = new MutationObserver((mutations)=>{
+    mutations.forEach(m=>{
+      const wrap = m.target;
+      if (wrap.nodeType === 1 && wrap.classList && wrap.classList.contains('boss-dropdown-wrap') && wrap.classList.contains('open')) {
+        repositionDropdownPanel(wrap);
+      }
+    });
+  });
+  document.querySelectorAll('.boss-dropdown-wrap').forEach(wrap=>{
+    observer.observe(wrap, { attributes:true, attributeFilter:['class'] });
+  });
+  // Un redimensionnement de la fenêtre peut faire déborder un panneau déjà
+  // ouvert (ou au contraire lui permettre de reprendre sa position par
+  // défaut) : on recalcule dans ce cas.
+  window.addEventListener('resize', repositionOpenDropdownPanels);
+}
+initDropdownAutoPosition();
+/* ============ FIN POSITIONNEMENT AUTO DES PANNEAUX DÉROULANTS ============ */
+
 function toggleBossCheck(bossName, days){
   if(!state.bossCooldowns) state.bossCooldowns = {};
   if(state.bossCooldowns[bossName]){
@@ -7098,7 +7309,7 @@ const LANG_KEY = 'pokedexHuntTracker_lang_v1';
 let currentLang = 'fr';
 try {
   const savedLang = localStorage.getItem(LANG_KEY);
-  if (savedLang === 'en' || savedLang === 'fr') currentLang = savedLang;
+  if (savedLang === 'en' || savedLang === 'fr' || savedLang === 'ko') currentLang = savedLang;
 } catch(e){}
 
 const TRANSLATIONS_FR_EN = {
@@ -7375,56 +7586,380 @@ const TRANSLATIONS_FR_EN = {
   "Shaymin (Ciel)": "Shaymin (Sky)",
   "Talent/nature basé sur le set compétitif de": "Ability/nature based on the competitive set of",
   "; vérifie le talent propre à cette forme si elle possède un set LC/NFE spécifique.": "; check the ability specific to this form if it has its own LC/NFE set.",
-  "Talent réel de ce Pokémon ; association nature/rôle estimée à partir de ses statistiques de base (pas un set Smogon vérifié).": "Real ability of this Pokémon; nature/role pairing estimated from its base stats (not a verified Smogon set)."
+  "Talent réel de ce Pokémon ; association nature/rôle estimée à partir de ses statistiques de base (pas un set Smogon vérifié).": "Real ability of this Pokémon; nature/role pairing estimated from its base stats (not a verified Smogon set).",
+  "Une erreur est survenue pendant l'affichage — réessaie ou redémarre l'app.": "Something went wrong while displaying this — try again or restart the app.",
+  "Une erreur est survenue pendant l'affichage de cette chasse.": "Something went wrong while displaying this hunt.",
+  "Essaie de changer de chasse dans la liste, ou clique ci-dessous pour réessayer. Si le problème persiste, redémarre l'application.": "Try switching to a different hunt in the list, or click below to try again. If the problem persists, restart the app.",
+  "Réessayer": "Try again"
 };
 
-let TRANSLATIONS_EN_FR = null;
-function getReverseTranslations(){
-  if (!TRANSLATIONS_EN_FR) {
-    TRANSLATIONS_EN_FR = {};
+const TRANSLATIONS_FR_KO = {
+  "Méga Gemmes": "메가스톤",
+  "Quêtes": "퀘스트",
+  "Récolte": "채집",
+  "Coche un site juste après l'avoir récolté : le cooldown se lance et la case se décoche seule quand il redevient dispo.": "채집한 직후에 사이트를 체크하세요: 쿨다운이 시작되고, 다시 이용 가능해지면 체크박스가 자동으로 해제됩니다.",
+  "Donjon": "던전",
+  "Coche un donjon une fois fait : il se décoche seul au reset du serveur, minuit GMT+0 — 02h00 en France (heure d'été).": "던전을 완료하면 체크하세요: 서버 리셋 시(GMT+0 자정 — 프랑스 서머타임 기준 오전 2시) 자동으로 체크가 해제됩니다.",
+  "Ouvrir la page du donjon (PRO Wiki)": "던전 페이지 열기 (PRO 위키)",
+  "Reset serveur — un donjon est de nouveau disponible": "서버 리셋 — 던전을 다시 이용할 수 있습니다",
+  "Ouvrir la page (PRO Wiki)": "페이지 열기 (PRO 위키)",
+  "Cooldown terminé — un site de récolte est de nouveau disponible": "쿨다운 종료 — 채집 사이트를 다시 이용할 수 있습니다",
+  "Rechercher un boss...": "보스 검색...",
+  "Rechercher une méga gemme...": "메가스톤 검색...",
+  "Rechercher une quête...": "퀘스트 검색...",
+  "Rechercher un site...": "사이트 검색...",
+  "Rechercher une daily...": "데일리 검색...",
+  "Coche un boss juste après l'avoir combattu : le cooldown se calcule automatiquement et la case se décoche seule quand il redevient dispo.": "보스와 싸운 직후에 체크하세요: 쿨다운이 자동으로 계산되고, 다시 이용 가능해지면 체크박스가 자동으로 해제됩니다.",
+  "Coche une méga gemme une fois sa quête terminée. Clique sur son nom pour ouvrir la page de la quête (PRO Wiki) dans un nouvel onglet.": "퀘스트를 완료하면 메가스톤을 체크하세요. 이름을 클릭하면 새 탭에서 퀘스트 페이지(PRO 위키)가 열립니다.",
+  "Coche une quête une fois terminée. Clique sur son nom pour ouvrir la page de la quête (PRO Wiki) dans un nouvel onglet.": "퀘스트를 완료하면 체크하세요. 이름을 클릭하면 새 탭에서 퀘스트 페이지(PRO 위키)가 열립니다.",
+  "Coche un site juste après l'avoir excavé (rochers cassés) : un cooldown de 20h se lance et la case se décoche seule quand le site redevient dispo.": "바위를 깬 직후에 사이트를 체크하세요: 20시간 쿨다운이 시작되고, 다시 이용 가능해지면 체크박스가 자동으로 해제됩니다.",
+  "Coche une daily une fois faite : elle se décoche seule au reset du serveur, minuit GMT+0 — 02h00 en France (heure d'été).": "데일리를 완료하면 체크하세요: 서버 리셋 시(GMT+0 자정 — 프랑스 서머타임 기준 오전 2시) 자동으로 체크가 해제됩니다.",
+  "Coche ton abonnement en cours : la case se décoche automatiquement à la fin de sa durée (15/30/60 jours).": "현재 사용 중인 멤버십을 체크하세요: 기간(15/30/60일)이 끝나면 체크박스가 자동으로 해제됩니다.",
+  "Coche ton Transit Pass en cours : la case se décoche automatiquement à la fin de sa durée (7/14/21/28/30 jours).": "현재 사용 중인 트랜짓 패스를 체크하세요: 기간(7/14/21/28/30일)이 끝나면 체크박스가 자동으로 해제됩니다.",
+  "Coche ton pass Safari en cours : la case se décoche automatiquement à la fin de sa durée (24h).": "현재 사용 중인 사파리 패스를 체크하세요: 기간(24시간)이 끝나면 체크박스가 자동으로 해제됩니다.",
+  "Ouvrir la page Safari Zones (PRO Wiki)": "사파리 존 페이지 열기 (PRO 위키)",
+  "Ton pass Safari vient d'expirer": "사파리 패스가 방금 만료되었습니다",
+  "Ouvrir la page Excavation (PRO Wiki)": "발굴 페이지 열기 (PRO 위키)",
+  "Ouvrir la page Membership (PRO Wiki)": "멤버십 페이지 열기 (PRO 위키)",
+  "Ouvrir la page Transit Pass (PRO Wiki)": "트랜짓 패스 페이지 열기 (PRO 위키)",
+  "Ouvrir la page de la daily (PRO Wiki)": "데일리 페이지 열기 (PRO 위키)",
+  "Ouvrir la page du boss (PRO Wiki)": "보스 페이지 열기 (PRO 위키)",
+  "Ouvre la page de la quête": "퀘스트 페이지 열기",
+  "Aucun boss ne correspond à la recherche.": "검색과 일치하는 보스가 없습니다.",
+  "Aucune méga gemme ne correspond à la recherche.": "검색과 일치하는 메가스톤이 없습니다.",
+  "Aucune quête ne correspond à la recherche.": "검색과 일치하는 퀘스트가 없습니다.",
+  "Aucun site ne correspond à la recherche.": "검색과 일치하는 사이트가 없습니다.",
+  "Aucune daily ne correspond à la recherche.": "검색과 일치하는 데일리가 없습니다.",
+  "Cooldown terminé — un boss est de nouveau disponible": "쿨다운 종료 — 보스를 다시 이용할 수 있습니다",
+  "Cooldown terminé — un site d'excavation est de nouveau disponible": "쿨다운 종료 — 발굴 사이트를 다시 이용할 수 있습니다",
+  "Ton Membership vient d'expirer": "멤버십이 방금 만료되었습니다",
+  "Ton Transit Pass vient d'expirer": "트랜짓 패스가 방금 만료되었습니다",
+  "prêt": "준비 완료",
+  "minuit GMT+0": "GMT+0 자정",
+  "Sites de base (Permis Archéologique)": "기본 사이트 (고고학 허가증)",
+  "Sites à débloquer (Points de Découverte)": "해금 가능한 사이트 (발견 포인트)",
+  "Route 111 (Désert)": "111번도로 (사막)",
+  "Route 124, ouest de Mossdeep — 6000 DP": "124번도로, 모스데프 서쪽 — 6000 DP",
+  "Route 113, est de Fallarbor — 10000 DP": "113번도로, 팔라보 동쪽 — 10000 DP",
+  "Sinnoh (accès)": "신오 (접근)",
+  "Multirégional / Autres": "다지역 / 기타",
+  "Garder la fenêtre au-dessus de toutes les autres": "창을 항상 다른 창 위에 표시",
+  "Rendre la fenêtre transparente (utile pour regarder une vidéo en dessous)": "창을 투명하게 만들기 (아래 영상을 볼 때 유용함)",
+  "Réduire l'app en petit widget flottant": "앱을 작은 플로팅 위젯으로 축소",
+  "▾ Réduire": "▾ 축소",
+  "▴ Agrandir": "▴ 확대",
+  "Revenir à l'affichage complet": "전체 화면으로 돌아가기",
+  "Afficher le panneau IV Scanner": "개체값 스캐너 패널 표시",
+  "Réduire le panneau IV Scanner": "개체값 스캐너 패널 축소",
+  "JOURNAL DES CHASSES": "사냥 기록",
+  "+ nouvelle chasse": "+ 새 사냥",
+  "Nouvelle chasse": "새 사냥",
+  "form alternative": "다른 폼",
+  "Form Alternative": "다른 폼",
+  "Variante": "변형",
+  "depuis shiny": "색다른 이후",
+  "depuis form alternative": "다른 폼 이후",
+  "trouvés": "발견",
+  "trouvées": "발견",
+  "depuis le dernier": "마지막 이후",
+  "depuis la dernière": "마지막 이후",
+  "dernier :": "마지막:",
+  "taux ": "비율 ",
+  " · moyenne ": " · 평균 ",
+  "Retour en arrière": "실행 취소",
+  "Forme / événement": "폼 / 이벤트",
+  "Cliquer pour corriger": "클릭해서 수정",
+  "Corriger le total shiny": "색다른 총합 수정",
+  "Corriger \"depuis le dernier\" (shiny)": "\"마지막 이후\" 수정 (색다른)",
+  "Corriger le minimum (shiny)": "최솟값 수정 (색다른)",
+  "Corriger le maximum (shiny)": "최댓값 수정 (색다른)",
+  "Corriger le dernier intervalle (shiny)": "마지막 간격 수정 (색다른)",
+  "Corriger le total forme alternative": "다른 폼 총합 수정",
+  "Corriger \"depuis la dernière\" (forme)": "\"마지막 이후\" 수정 (폼)",
+  "Corriger le minimum (forme)": "최솟값 수정 (폼)",
+  "Corriger le maximum (forme)": "최댓값 수정 (폼)",
+  "Corriger le dernier intervalle (forme)": "마지막 간격 수정 (폼)",
+  "Corriger le total all-time": "전체 누적 총합 수정",
+  "Nouvelle valeur": "새 값",
+  "Valeur invalide — nombre entier positif attendu": "잘못된 값 — 양의 정수를 입력해야 합니다",
+  "Le total all-time est déjà à 0": "전체 누적 총합이 이미 0입니다",
+  "Total all-time réinitialisé (était": "전체 누적 총합이 초기화되었습니다 (이전 값",
+  "Aucun retour en arrière possible": "실행 취소할 내용이 없습니다",
+  "Retour en arrière effectué (shiny)": "실행 취소 완료 (색다른)",
+  "Retour en arrière effectué (form alternative)": "실행 취소 완료 (다른 폼)",
+  "Données sauvegardées illisibles": "저장된 데이터를 읽을 수 없습니다",
+  "Sauvegarde exportée": "백업이 내보내졌습니다",
+  "Données importées avec succès": "데이터를 성공적으로 가져왔습니다",
+  "Exporter": "내보내기",
+  "Importer": "가져오기",
+  "Analyse des IV": "개체값 분석",
+  "Historique": "기록",
+  "Colle une capture pour lancer l'analyse.": "스크린샷을 붙여넣어 분석을 시작하세요.",
+  "Aucune analyse enregistrée pour l'instant.": "아직 저장된 분석이 없습니다.",
+  "Aucune analyse enregistree pour l'instant.": "아직 저장된 분석이 없습니다.",
+  "Appuie sur": "다음 키를 누르세요:",
+  "Impr. écran": "Print Screen",
+  ", sélectionne la zone,": ", 영역을 선택한 뒤",
+  "puis colle ici avec": " 다음 키로 여기에 붙여넣으세요:",
+  "Capture collée": "스크린샷 붙여넣기 완료",
+  "↻ Relancer l'analyse": "↻ 분석 다시 실행",
+  "💾 Enregistrer dans l'historique": "💾 기록에 저장",
+  "Aucun intervalle enregistré pour l’instant.": "아직 저장된 간격이 없습니다.",
+  "Cliquer pour saisir/corriger manuellement": "클릭해서 직접 입력/수정",
+  "? (ambigu)": "? (모호함)",
+  "PV": "체력",
+  "Attaque": "공격",
+  "Défense": "방어",
+  "Atq. Spé.": "특공",
+  "Déf. Spé.": "특방",
+  "Vitesse": "스피드",
+  "Région": "지역",
+  "Sans pseudo": "닉네임 없음",
+  "Zone inconnue": "알 수 없는 구역",
+  "Cliquer pour modifier le pseudo": "클릭해서 닉네임 수정",
+  "Cliquer pour modifier la zone": "클릭해서 구역 수정",
+  "Cliquer pour modifier la région": "클릭해서 지역 수정",
+  "Cliquer pour changer l'avatar du dresseur": "클릭해서 트레이너 아바타 변경",
+  "aucune chasse sélectionnée": "선택된 사냥 없음",
+  "Crée une nouvelle chasse pour commencer à compter tes rencontres.": "새 사냥을 만들어 조우 횟수를 세기 시작하세요.",
+  "Une même chasse peut contenir plusieurs Pokémon. Le total reste historique. Avec la détection OCR automatique activée, chaque Pokémon rencontré est repéré et compté tout seul.": "하나의 사냥에는 여러 포켓몬이 포함될 수 있습니다. 총합은 계속 누적됩니다. 자동 OCR 감지를 켜두면 조우하는 포켓몬이 자동으로 인식되어 카운트됩니다.",
+  "capture d'écran — Pokémon Revolution Online": "스크린샷 — Pokémon Revolution Online",
+  "▸ afficher l’aperçu": "▸ 미리보기 표시",
+  "▾ réduire l’aperçu": "▾ 미리보기 숨기기",
+  "Arrêter le partage": "공유 중지",
+  "Partager mon écran": "화면 공유하기",
+  "détection OCR automatique": "자동 OCR 감지",
+  "zone calibrée ✓ — la détection surveille cette zone": "구역 보정 완료 ✓ — 이 구역을 감시 중입니다",
+  "trace un rectangle sur l’image, sur la zone où apparaît le texte de rencontre / combat": "조우/전투 텍스트가 나타나는 영역에 이미지 위로 사각형을 그리세요",
+  "partage la fenêtre du jeu pour activer la détection — l’OCR continue même si tu changes d’onglet": "감지를 활성화하려면 게임 창을 공유하세요 — 탭을 전환해도 OCR은 계속 작동합니다",
+  "partage actif": "공유 중",
+  "détection auto activée": "자동 감지 활성화됨",
+  "aperçu masqué": "미리보기 숨김",
+  "Clique-glisse sur l'aperçu pour définir la zone à surveiller. L'OCR lit la ligne du combat, par exemple": "미리보기 화면을 클릭한 채 드래그해서 감시할 영역을 지정하세요. OCR은 전투 텍스트 줄을 읽습니다. 예:",
+  ", puis récupère uniquement le nom après": ", 그리고 다음 뒤에 오는 이름만 추출합니다:",
+  ". Les Pokémon inconnus sont ajoutés automatiquement à la même chasse. Appuie sur": ". 알 수 없는 포켓몬은 자동으로 같은 사냥에 추가됩니다. 다음 키:",
+  "pour compter manuellement.": "를 눌러 수동으로 카운트하세요.",
+  "Replié — cliquer pour réafficher": "접힘 — 클릭해서 다시 표시",
+  "Déplier": "펼치기",
+  "Replier": "접기",
+  "▸ afficher": "▸ 표시",
+  "▾ tout réduire": "▾ 모두 접기",
+  "Probabilité cumulée": "누적 확률",
+  "Analyse de Convergence Dynamique": "동적 수렴 분석",
+  "Rencontres (N)": "조우 수 (N)",
+  "Forme Pokémon :": "포켓몬 폼:",
+  "Forme global :": "전체 폼:",
+  "graphique": "그래프",
+  "graphique masqué": "그래프 숨김",
+  "n'a pas la forme": "은(는) 폼이 없습니다:",
+  "— graphique gelé": "— 그래프 고정됨",
+  "détails": "세부 정보",
+  "détails masqués": "세부 정보 숨김",
+  "— statistiques gelées": "— 통계 고정됨",
+  "panneau réduit —": "패널 축소됨 —",
+  "aucun Pokémon": "포켓몬 없음",
+  "Pokémon :": "포켓몬:",
+  "Aucun": "없음",
+  "Taux de rencontre :": "조우율:",
+  "moyenne": "평균",
+  "rencontres)": "회 조우)",
+  "Probabilité de rencontre de": "다음의 조우 확률:",
+  "ce Pokémon": "이 포켓몬",
+  "global :": "전체:",
+  "Convergence forme Pokémon (": "포켓몬 폼 수렴 (",
+  "rencontres depuis le dernier reset de": "마지막 리셋 이후 조우 수 — 대상:",
+  "Convergence forme global (": "전체 폼 수렴 (",
+  "rencontres depuis le dernier reset du cycle": "사이클의 마지막 리셋 이후 조우 수",
+  "Statut :": "상태:",
+  "Très proche du seuil": "임계값에 매우 근접",
+  "Très intéressant": "매우 흥미로움",
+  "Intéressant": "흥미로움",
+  "À surveiller": "주시할 만함",
+  "Total de cette chasse": "이 사냥의 총합",
+  "Temps": "시간",
+  "+1 Rencontre (": "+1 조우 (",
+  "Sélectionne un Pokémon": "포켓몬 선택",
+  "rencontres de ce Pokémon": "이 포켓몬의 조우 수",
+  "H.A (Talent Caché)": "숨특 (숨겨진 특성)",
+  "Forme trouvée !": "폼 발견!",
+  "Shiny trouvé !": "색다른 포켓몬 발견!",
+  "Reset ce Pokémon": "이 포켓몬 초기화",
+  "rencontres": "조우",
+  "Formes possédées par": "다음이 보유한 폼:",
+  "— décocher une forme la fige (statistiques gelées) pour ce Pokémon": "— 폼 체크를 해제하면 이 포켓몬의 통계가 고정됩니다",
+  "— indisponible pour ce Pokémon (gelé)": "— 이 포켓몬에는 사용할 수 없음 (고정됨)",
+  "Nature(s) recommandée(s) :": "추천 성격:",
+  "Nature(s) des sets compétitifs Génération 9 (Smogon / StrategyDex) — utile pour choisir ton Pokémon Synchronize afin de cibler cette nature en rencontre.": "9세대 경쟁전 세트 기준 성격(Smogon / StrategyDex) — 싱크로 포켓몬으로 이 성격을 노리고 조우하려 할 때 유용합니다.",
+  "estimation": "추정치",
+  "Ton pseudo": "닉네임",
+  "Ex: Ash, Sacha...": "예: 지우, 레드...",
+  "Ex: Route 1, Forêt de Jade...": "예: 1번도로, 초록숲...",
+  "Annuler": "취소",
+  "Créer": "생성",
+  "Valider": "확인",
+  "Fermer": "닫기",
+  "Enregistrer": "저장",
+  "Ajouter": "추가",
+  "Modifier la région": "지역 수정",
+  "Ajouter un Pokémon": "포켓몬 추가",
+  "Nom du Pokémon": "포켓몬 이름",
+  "Ex: Pikachu, Rayquaza...": "예: 피카츄, 레쿠쟈...",
+  "Avatar du dresseur": "트레이너 아바타",
+  "Comment faire :": "방법:",
+  "ouvre le": "게임에서",
+  "du jeu, puis fais une capture d'écran de ton avatar affiché en bas à gauche du shop. Colle-la ensuite ici avec": "을 열고, 상점 왼쪽 아래에 표시된 아바타를 스크린샷으로 찍은 후 다음 키로 여기에 붙여넣으세요:",
+  "(ou choisis le fichier).": " (또는 파일을 선택하세요).",
+  "Utilise la": "다음:",
+  "baguette magique": "마법 지팡이",
+  "pour retirer le fond, et baisse la": "를 사용해 배경을 제거하고,",
+  "tolérance à 4": " 허용 오차를 4로 낮추세요.",
+  "pour que le contour se détoure correctement.": " 그러면 윤곽이 올바르게 잘립니다.",
+  "Colle une capture d'écran (Ctrl+V) ou clique pour choisir un fichier": "스크린샷을 붙여넣거나 (Ctrl+V) 클릭해서 파일을 선택하세요",
+  "Cliquer sur le fond à retirer": "제거할 배경을 클릭하세요",
+  "🪄 Baguette magique": "🪄 마법 지팡이",
+  "Effacer à la main": "직접 지우기",
+  "🧽 Gomme": "🧽 지우개",
+  "Restaurer les pixels d'origine": "원본 픽셀 복원",
+  "↩️ Restaurer": "↩️ 복원",
+  "Annuler la dernière action": "마지막 작업 취소",
+  "⤺ Annuler": "⤺ 취소",
+  "Recharger l'image d'origine": "원본 이미지 다시 불러오기",
+  "Réinitialiser": "초기화",
+  "Retirer l'avatar": "아바타 제거",
+  "Tolérance": "허용 오차",
+  "Le fichier déposé n'est pas une image": "드롭한 파일이 이미지가 아닙니다",
+  "Avatar enregistré": "아바타가 저장되었습니다",
+  "Erreur de lecture du fichier collé": "붙여넣은 파일을 읽는 중 오류가 발생했습니다",
+  "Trace d'abord un rectangle de sélection sur l'image": "먼저 이미지 위에 선택 사각형을 그리세요",
+  "Rien à annuler": "취소할 내용이 없습니다",
+  "Une chasse doit garder au moins un Pokémon": "사냥에는 최소 한 마리의 포켓몬이 있어야 합니다",
+  "supprimer": "삭제",
+  "ne possède pas la forme": "은(는) 폼이 없습니다:",
+  "— case décochée": "— 체크 해제됨",
+  "Forme de": "다음의 폼:",
+  "trouvée (": "발견 (",
+  ") — convergences réinitialisées": ") — 수렴 초기화됨",
+  "Shiny de": "다음의 색다른:",
+  "trouvé — convergences réinitialisées": "발견 — 수렴 초기화됨",
+  "réinitialisé — compteurs mis à jour": "초기화됨 — 카운터 업데이트됨",
+  "détecté — +1": "감지됨 — +1",
+  "détecté</span>": "감지됨</span>",
+  "Détecté :": "감지됨:",
+  "texte non reconnu comme Pokémon": "포켓몬으로 인식되지 않은 텍스트",
+  "(aucun texte — vérifie la zone)": "(텍스트 없음 — 구역을 확인하세요)",
+  "OCR indisponible — vérifie ta connexion ou utilise E pour compter manuellement": "OCR을 사용할 수 없습니다 — 연결을 확인하거나 E 키로 수동 카운트하세요",
+  "Calibre d'abord la zone contenant 'Wild + Pokémon'": "먼저 'Wild + 포켓몬'이 포함된 구역을 보정하세요",
+  "Ce navigateur ne permet pas le partage d'écran ici — ouvre le fichier depuis une adresse HTTPS.": "이 브라우저에서는 화면 공유를 사용할 수 없습니다 — HTTPS 주소에서 파일을 여세요.",
+  "Partage d'écran refusé ou indisponible dans cet environnement": "이 환경에서는 화면 공유가 거부되었거나 사용할 수 없습니다",
+  "Urshifu (Rapide)": "우라오스 (연격의 형태)",
+  "Hoopa Déchaîné": "후파 (해방의 모습)",
+  "Sylveroc Glacial": "하얀 갈기의 버드레미",
+  "Sylveroc Spectral": "검은 갈기의 버드레미",
+  "Giratina (Origine)": "기라티나 (오리진폼)",
+  "Deoxys (Attaque)": "데옥시스 (어택폼)",
+  "Deoxys (Défense)": "데옥시스 (디펜스폼)",
+  "Deoxys (Vitesse)": "데옥시스 (스피드폼)",
+  "Motisec Chaud": "히트로토무",
+  "Motisec Lavo": "워시로토무",
+  "Motisec Frigo": "프로스트로토무",
+  "Motisec Ventilo": "팬로토무",
+  "Motisec Tondo": "컷로토무",
+  "Shaymin (Ciel)": "쉐이미 (스카이폼)",
+  "Talent/nature basé sur le set compétitif de": "다음의 경쟁전 세트를 기준으로 한 특성/성격:",
+  "; vérifie le talent propre à cette forme si elle possède un set LC/NFE spécifique.": "; 이 폼이 별도의 LC/NFE 세트를 가지고 있다면 해당 폼 고유의 특성을 확인하세요.",
+  "Talent réel de ce Pokémon ; association nature/rôle estimée à partir de ses statistiques de base (pas un set Smogon vérifié).": "이 포켓몬의 실제 특성; 성격/역할 조합은 종족값을 기반으로 추정한 것입니다 (검증된 Smogon 세트 아님).",
+  "Une erreur est survenue pendant l'affichage — réessaie ou redémarre l'app.": "표시 중 오류가 발생했습니다 — 다시 시도하거나 앱을 재시작하세요.",
+  "Une erreur est survenue pendant l'affichage de cette chasse.": "이 사냥을 표시하는 중 오류가 발생했습니다.",
+  "Essaie de changer de chasse dans la liste, ou clique ci-dessous pour réessayer. Si le problème persiste, redémarre l'application.": "목록에서 다른 사냥으로 전환해 보거나, 아래를 클릭해 다시 시도하세요. 문제가 계속되면 앱을 재시작하세요.",
+  "Réessayer": "다시 시도"
+};
+
+// Dictionnaires inversés (langue -> français), construits paresseusement à
+// partir des dictionnaires FR->X ci-dessus. Un dictionnaire par langue
+// cible (en, ko) pour pouvoir revenir précisément au français quel que
+// soit la langue quittée.
+const REVERSE_CACHE = {};
+function getReverseTranslations(lang){
+  if (!REVERSE_CACHE[lang]) {
+    const src = lang === 'ko' ? TRANSLATIONS_FR_KO : TRANSLATIONS_FR_EN;
+    const rev = {};
     // Les clés les plus longues sont insérées en dernier pour qu'en cas de
-    // valeur anglaise dupliquée (deux phrases françaises différentes qui
+    // valeur traduite dupliquée (deux phrases françaises différentes qui
     // se traduisent pareil), le dictionnaire inverse garde la version la
-        // plus longue/spécifique — un compromis raisonnable pour un retour
+    // plus longue/spécifique — un compromis raisonnable pour un retour
     // au français qui reste lisible même si non-parfaitement bijectif.
-    const keys = Object.keys(TRANSLATIONS_FR_EN).sort((a,b)=>a.length-b.length);
-    keys.forEach(fr=>{ TRANSLATIONS_EN_FR[TRANSLATIONS_FR_EN[fr]] = fr; });
+    const keys = Object.keys(src).sort((a,b)=>a.length-b.length);
+    keys.forEach(fr=>{ rev[src[fr]] = fr; });
+    REVERSE_CACHE[lang] = rev;
   }
-  return TRANSLATIONS_EN_FR;
+  return REVERSE_CACHE[lang];
 }
 
-let sortedFrKeysCache = null;
-function getSortedFrKeys(){
-  if (!sortedFrKeysCache) sortedFrKeysCache = Object.keys(TRANSLATIONS_FR_EN).sort((a,b)=>b.length-a.length);
-  return sortedFrKeysCache;
-}
-let sortedEnKeysCache = null;
-function getSortedEnKeys(){
-  if (!sortedEnKeysCache) sortedEnKeysCache = Object.keys(getReverseTranslations()).sort((a,b)=>b.length-a.length);
-  return sortedEnKeysCache;
+// direction: 'toEn' / 'toKo' (français -> langue cible) ou
+// 'toFrFromEn' / 'toFrFromKo' (langue -> français, retour à la source).
+function getDictForDirection(direction){
+  switch(direction){
+    case 'toEn': return TRANSLATIONS_FR_EN;
+    case 'toKo': return TRANSLATIONS_FR_KO;
+    case 'toFrFromEn': return getReverseTranslations('en');
+    case 'toFrFromKo': return getReverseTranslations('ko');
+  }
+  return {};
 }
 
-// direction: 'toEn' (français -> anglais) ou 'toFr' (anglais -> français).
+const SORTED_KEYS_CACHE = {};
+function getSortedKeysForDirection(direction){
+  if (!SORTED_KEYS_CACHE[direction]) {
+    SORTED_KEYS_CACHE[direction] = Object.keys(getDictForDirection(direction)).sort((a,b)=>b.length-a.length);
+  }
+  return SORTED_KEYS_CACHE[direction];
+}
+
 function translateTextDirectional(str, direction){
   if (!str) return str;
-  const dict = direction === 'toEn' ? TRANSLATIONS_FR_EN : getReverseTranslations();
-  const keys = direction === 'toEn' ? getSortedFrKeys() : getSortedEnKeys();
+  const dict = getDictForDirection(direction);
+  const keys = getSortedKeysForDirection(direction);
   let result = str;
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
     if (result.indexOf(k) !== -1) result = result.split(k).join(dict[k]);
   }
-  // Conversion ciblée du suffixe de durée "Xj" (jours) -> "Xd" (days) dans
-  // les compteurs (fmtBossRemaining) — uniquement en anglais, uniquement
-  // quand "j" suit directement un chiffre, pour ne jamais toucher un "j"
-  // isolé ailleurs dans un texte.
+  // Conversion ciblée du suffixe de durée "Xj" (jours) -> "Xd" / "X일" dans
+  // les compteurs (fmtBossRemaining) — uniquement quand "j" suit
+  // directement un chiffre, pour ne jamais toucher un "j" isolé ailleurs
+  // dans un texte. Conversion inverse symétrique au retour vers le français.
   if (direction === 'toEn') result = result.replace(/(\d)j\b/g, '$1d');
-  else result = result.replace(/(\d)d\b/g, '$1j');
+  else if (direction === 'toKo') result = result.replace(/(\d)j\b/g, '$1일');
+  else if (direction === 'toFrFromEn') result = result.replace(/(\d)d\b/g, '$1j');
+  else if (direction === 'toFrFromKo') result = result.replace(/(\d)일/g, '$1j');
   return result;
 }
 
+function directionToTarget(lang){
+  if (lang === 'en') return 'toEn';
+  if (lang === 'ko') return 'toKo';
+  return null;
+}
+function directionToFrenchFrom(lang){
+  if (lang === 'en') return 'toFrFromEn';
+  if (lang === 'ko') return 'toFrFromKo';
+  return null;
+}
+
 function translateText(str){
-  return translateTextDirectional(str, currentLang === 'en' ? 'toEn' : 'toFr');
+  const direction = directionToTarget(currentLang);
+  return direction ? translateTextDirectional(str, direction) : str;
+}
+
+// Prévient l'app de bureau Electron (si présente — window.windowControls
+// n'existe pas dans un simple navigateur) du changement de langue, pour
+// que les fenêtres qu'elle ouvre elle-même (ex: le sélecteur "Choisir une
+// source de capture" pour l'OCR) s'affichent dans la même langue que le
+// reste de l'application plutôt que de rester figées en français.
+function notifyElectronLanguage(lang){
+  if (typeof window.windowControls !== 'undefined' && window.windowControls.setLanguage) {
+    try { window.windowControls.setLanguage(lang); } catch(e){}
+  }
 }
 
 const I18N_ATTRS = ['title','placeholder','alt','aria-label'];
@@ -7452,13 +7987,15 @@ function translateNodeDirectional(node, direction){
 }
 
 function translateNode(node){
-  if (currentLang !== 'en') return;
-  translateNodeDirectional(node, 'toEn');
+  const direction = directionToTarget(currentLang);
+  if (!direction) return;
+  translateNodeDirectional(node, direction);
 }
 
 function translateDOM(root){
-  if (currentLang !== 'en') return;
-  translateNodeDirectional(root || document.body, 'toEn');
+  const direction = directionToTarget(currentLang);
+  if (!direction) return;
+  translateNodeDirectional(root || document.body, direction);
 }
 
 let i18nObserverStarted = false;
@@ -7466,14 +8003,15 @@ function startI18nObserver(){
   if (i18nObserverStarted) return;
   i18nObserverStarted = true;
   const observer = new MutationObserver((mutations)=>{
-    if (currentLang !== 'en') return;
+    const direction = directionToTarget(currentLang);
+    if (!direction) return;
     mutations.forEach(m=>{
       if (m.type === 'childList') {
-        m.addedNodes.forEach(n=> translateNodeDirectional(n, 'toEn'));
+        m.addedNodes.forEach(n=> translateNodeDirectional(n, direction));
       } else if (m.type === 'characterData') {
-        translateNodeDirectional(m.target, 'toEn');
+        translateNodeDirectional(m.target, direction);
       } else if (m.type === 'attributes') {
-        translateNodeDirectional(m.target, 'toEn');
+        translateNodeDirectional(m.target, direction);
       }
     });
   });
@@ -7483,9 +8021,11 @@ function startI18nObserver(){
   });
 }
 
+const LANG_LABELS = { fr:'Français', en:'English', ko:'한국어' };
+
 function updateLangDropdownLabel(){
   const label = document.getElementById('langDropdownLabel');
-  if (label) label.textContent = currentLang === 'en' ? 'English' : 'Français';
+  if (label) label.textContent = LANG_LABELS[currentLang] || LANG_LABELS.fr;
 }
 
 function renderLangPanel(){
@@ -7494,6 +8034,7 @@ function renderLangPanel(){
   const langs = [
     {code:'fr', label:'Français'},
     {code:'en', label:'English'},
+    {code:'ko', label:'한국어'},
   ];
   list.innerHTML = langs.map(l=>`
     <label class="boss-row ${l.code===currentLang?'on':''}" data-lang="${l.code}" style="cursor:pointer;">
@@ -7507,17 +8048,28 @@ function renderLangPanel(){
 
 // Change la langue active : persiste le choix, puis rafraîchit tout ce qui
 // est actuellement à l'écran. Aucune fonction de rendu existante n'est
-// modifiée : on se contente (1) de les rappeler pour qu'elles regénèrent
-// leur HTML "source" en français, puis (2) de retraduire le DOM obtenu si
-// la langue choisie est l'anglais. Passer par le français intermédiaire
-// avant de retraduire est ce qui permet un retour FR fidèle après un
-// passage en EN, sans avoir à mémoriser le texte original ailleurs.
+// modifiée : on se contente (1) de reconvertir ce qui est affiché vers le
+// français source (au cas où on quitte une langue non-française), (2) de
+// rappeler les fonctions de rendu pour qu'elles regénèrent leur HTML
+// "source" en français, puis (3) de traduire le DOM obtenu vers la langue
+// cible si ce n'est pas le français. Repasser par le français intermédiaire
+// est ce qui permet un retour FR fidèle après un passage en EN ou KO, sans
+// avoir à mémoriser le texte original ailleurs — et un changement direct
+// EN <-> KO passe donc lui aussi par cette étape française intermédiaire.
 function setLanguage(lang){
-  if (lang !== 'fr' && lang !== 'en') return;
+  if (lang !== 'fr' && lang !== 'en' && lang !== 'ko') return;
+  const prevLang = currentLang;
+
+  // 1) Reconvertir en français ce qui est actuellement affiché, si on
+  // quitte une langue non-française (sinon rien à faire, c'est déjà en
+  // français).
+  const backToFrDirection = directionToFrenchFrom(prevLang);
+  if (backToFrDirection) translateNodeDirectional(document.body, backToFrDirection);
+
   currentLang = lang;
   try { localStorage.setItem(LANG_KEY, lang); }catch(e){}
 
-  // 1) Refaire le rendu des zones dynamiques déjà affichées, toujours en
+  // 2) Refaire le rendu des zones dynamiques déjà affichées, toujours en
   // français à la source (le code de ces fonctions n'a pas changé).
   if (typeof render === 'function') {
     try { render(); } catch(e){}
@@ -7535,17 +8087,16 @@ function setLanguage(lang){
     }
   });
 
-  // 2) Si on revient au français, le DOM regénéré à l'étape 1 est déjà
-  // dans la bonne langue pour les zones dynamiques ; il ne reste qu'à
-  // reconvertir en français le HTML STATIQUE (chargé une seule fois au
-  // démarrage de la page) qui avait été traduit en anglais.
-  // Si on passe à l'anglais, on traduit tout le document (statique +
-  // dynamique) d'un coup.
-  translateNodeDirectional(document.body, currentLang === 'en' ? 'toEn' : 'toFr');
+  // 3) Le DOM (statique + zones dynamiques regénérées à l'étape 2) est
+  // maintenant en français. On le traduit vers la langue cible si ce
+  // n'est pas le français.
+  const targetDirection = directionToTarget(currentLang);
+  if (targetDirection) translateNodeDirectional(document.body, targetDirection);
 
   updateLangDropdownLabel();
   renderLangPanel();
   startI18nObserver();
+  notifyElectronLanguage(currentLang);
 }
 
 function setupLangDropdown(){
@@ -7565,12 +8116,18 @@ function setupLangDropdown(){
   renderLangPanel();
   // Applique la préférence sauvegardée (localStorage) dès le chargement :
   // le HTML statique de la page vient d'être parsé en français, donc si la
-  // préférence est l'anglais on le traduit tout de suite, puis on démarre
-  // l'observateur pour que tout ce qui sera rendu ensuite (render() initial
-  // inclus, appelé juste après par loadState().then(...)) soit traduit au
-  // fil de l'eau.
-  if (currentLang === 'en') translateDOM(document.body);
+  // préférence est une autre langue on le traduit tout de suite, puis on
+  // démarre l'observateur pour que tout ce qui sera rendu ensuite (render()
+  // initial inclus, appelé juste après par loadState().then(...)) soit
+  // traduit au fil de l'eau.
+  translateDOM(document.body);
   startI18nObserver();
+  // Informe aussi l'app Electron de la langue initiale (chargée depuis
+  // localStorage), pas seulement des changements ultérieurs : sinon la
+  // toute première ouverture du sélecteur de capture resterait en
+  // français par défaut côté main.js tant qu'aucun changement de langue
+  // n'a eu lieu dans cette session.
+  notifyElectronLanguage(currentLang);
 }
 setupLangDropdown();
 /* ===================== FIN I18N ===================== */

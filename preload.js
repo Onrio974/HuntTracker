@@ -19,12 +19,16 @@ contextBridge.exposeInMainWorld('appInfo', {
   isElectron: true
 });
 
-// Pont pour les 3 contrôles de fenêtre demandés (toujours au premier plan,
-// transparence, mode compact). On expose uniquement des fonctions précises
-// et bornées (pas ipcRenderer brut) : la page ne peut rien faire d'autre
-// que ces 3 actions, conformément à contextIsolation + sandbox.
+// Pont pour les 4 contrôles de fenêtre demandés (toujours au premier plan,
+// transparence, mode compact, langue). On expose uniquement des fonctions
+// précises et bornées (pas ipcRenderer brut) : la page ne peut rien faire
+// d'autre que ces 4 actions, conformément à contextIsolation + sandbox.
+// setLanguage permet à main.js de savoir dans quelle langue (fr/en/ko)
+// l'app est actuellement affichée, pour ouvrir dans la même langue les
+// fenêtres qu'il gère lui-même (ex: le sélecteur de capture d'écran).
 contextBridge.exposeInMainWorld('windowControls', {
   setAlwaysOnTop: (flag) => ipcRenderer.invoke('controls:setAlwaysOnTop', flag),
   setOpacity: (value) => ipcRenderer.invoke('controls:setOpacity', value),
-  setCompact: (flag) => ipcRenderer.invoke('controls:setCompact', flag)
+  setCompact: (flag) => ipcRenderer.invoke('controls:setCompact', flag),
+  setLanguage: (lang) => ipcRenderer.invoke('controls:setLanguage', lang)
 });

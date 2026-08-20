@@ -52,7 +52,7 @@
 </head>
 <body>
   <header>
-    <h1>Choisir ce que tu veux capturer</h1>
+    <h1 id="heading">Choisir ce que tu veux capturer</h1>
     <div class="tabs">
       <button class="tab active" data-type="screen">Écrans</button>
       <button class="tab" data-type="window">Fenêtres</button>
@@ -64,6 +64,49 @@
   </footer>
 
 <script>
+  // Traductions de cette fenêtre (fr/en/ko), tenues à jour en même temps
+  // que le dictionnaire principal de index.html. Cette fenêtre est un
+  // document Electron séparé (chargé via pickerWindow.loadFile) : elle n'a
+  // pas accès au DOM ni au localStorage de la page principale, donc la
+  // langue à afficher lui est transmise explicitement par main.js via
+  // l'IPC 'picker:lang' (voir picker-preload.js / main.js).
+  const PICKER_I18N = {
+    fr: {
+      title: 'Choisir une source de capture',
+      heading: 'Choisir ce que tu veux capturer',
+      tabScreen: 'Écrans',
+      tabWindow: 'Fenêtres',
+      empty: 'Aucune source disponible dans cette catégorie.',
+      noPreview: "Pas d'aperçu",
+      noName: 'Sans nom',
+      cancel: 'Annuler'
+    },
+    en: {
+      title: 'Choose a capture source',
+      heading: 'Choose what you want to capture',
+      tabScreen: 'Screens',
+      tabWindow: 'Windows',
+      empty: 'No source available in this category.',
+      noPreview: 'No preview',
+      noName: 'Unnamed',
+      cancel: 'Cancel'
+    },
+    ko: {
+      title: '캡처할 소스 선택',
+      heading: '캡처할 화면을 선택하세요',
+      tabScreen: '화면',
+      tabWindow: '창',
+      empty: '이 카테고리에는 사용 가능한 소스가 없습니다.',
+      noPreview: '미리보기 없음',
+      noName: '이름 없음',
+      cancel: '취소'
+    }
+  };
+  let pickerLang = 'fr';
+  function t(key){
+    return (PICKER_I18N[pickerLang] || PICKER_I18N.fr)[key];
+  }
+
   let allSources = [];
   let currentType = 'screen';
 
@@ -74,7 +117,7 @@
     const list = allSources.filter(s => s.type === currentType);
     grid.innerHTML = '';
     if(list.length === 0){
-      grid.innerHTML = '<div class="empty-msg">Aucune source disponible dans cette catégorie.</div>';
+      grid.innerHTML = `<div class="empty-msg">${escapeHtml(t('empty'))}</div>`;
       return;
     }
     for(const s of list){
@@ -82,9 +125,9 @@
       card.className = 'card';
       card.innerHTML = `
         <div class="thumb ${s.thumbnail ? '' : 'empty'}">
-          ${s.thumbnail ? `<img src="${s.thumbnail}" alt="">` : 'Pas d\'aperçu'}
+          ${s.thumbnail ? `<img src="${s.thumbnail}" alt="">` : escapeHtml(t('noPreview'))}
         </div>
-        <div class="name">${escapeHtml(s.name || 'Sans nom')}</div>
+        <div class="name">${escapeHtml(s.name || t('noName'))}</div>
       `;
       card.addEventListener('click', () => {
         window.pickerAPI.select(s.id);
@@ -99,6 +142,24 @@
     return d.innerHTML;
   }
 
+  // Applique la langue courante aux éléments statiques (titre de fenêtre,
+  // en-tête, onglets, bouton Annuler), puis redessine la grille pour que
+  // ses textes générés dynamiquement (message "aucune source", "pas
+  // d'aperçu", "sans nom") suivent eux aussi la nouvelle langue.
+  function applyPickerLang(){
+    document.title = t('title');
+    document.documentElement.lang = pickerLang;
+    const heading = document.getElementById('heading');
+    if (heading) heading.textContent = t('heading');
+    const screenTab = document.querySelector('[data-type="screen"]');
+    if (screenTab) screenTab.textContent = t('tabScreen');
+    const windowTab = document.querySelector('[data-type="window"]');
+    if (windowTab) windowTab.textContent = t('tabWindow');
+    const cancelBtn = document.getElementById('cancelBtn');
+    if (cancelBtn) cancelBtn.textContent = t('cancel');
+    render();
+  }
+
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       tabs.forEach(t => t.classList.remove('active'));
@@ -110,6 +171,11 @@
 
   document.getElementById('cancelBtn').addEventListener('click', () => {
     window.close();
+  });
+
+  window.pickerAPI.onLang((lang) => {
+    if (lang === 'fr' || lang === 'en' || lang === 'ko') pickerLang = lang;
+    applyPickerLang();
   });
 
   window.pickerAPI.onSources((sources) => {
