@@ -1183,6 +1183,7 @@
       <div class="sub" id="formPitySub">min — · max —</div>
       <div class="sub" id="formLastSub">dernier : —</div>
       <div class="sub" id="formRateSub">taux — · moyenne —</div>
+      <div class="sub" id="formShapeTotalSub" title="Rencontres comptées toutes chasses confondues pendant que cette catégorie était sélectionnée — référence commune pour la convergence des Pokémon jamais trouvés dans cette forme.">Total Summer : 0</div>
       <div style="display:flex;gap:6px;margin-top:7px;">
         <button class="act danger-outline" id="formMinusBtn" style="font-size:11px;padding:5px 8px;flex:1;">-1</button>
         <button class="act" id="formUndoBtn" title="Retour en arrière" style="font-size:11px;padding:5px 8px;flex:0 0 34px;">↩</button>
@@ -1292,6 +1293,11 @@ const FORM_SHAPE_ABBR = { Summer:'Su', Halloween:'Ha', Xmas:'Xm', Easter:'Ea', V
 let state = { grandTotal: 0, activeHuntId: null, activePokemonId: null, hunts: [], collapsedRegions: {},
   shinyTracker: { total:0, pityCurrent:0, pityMin:0, pityMax:0, pityLast:0, pityHits:0 },
   formTracker: { total:0, pityCurrent:0, pityMin:0, pityMax:0, pityLast:0, pityHits:0 },
+  // Total de rencontres, TOUTES chasses confondues, comptabilisées pendant que
+  // chaque catégorie de forme (Summer/Halloween/...) était sélectionnée. Sert
+  // de référence commune pour la convergence "forme" de tous les Pokémon
+  // jamais trouvés (ni gelés) dans cette forme — voir bumpGlobalPity().
+  formShapeTotals: {},
   formShape: 'Summer',
   ivHistory: [],
   bossCooldowns: {},
@@ -2448,7 +2454,18 @@ function normalizeState(){
       pityHits: Number(p.pityHits) || 0,
       collapsed: !!p.collapsed,
       captureRate: typeof p.captureRate === 'number' ? p.captureRate : null,
-      availableForms: normalizeAvailableForms(p.availableForms)
+      availableForms: normalizeAvailableForms(p.availableForms),
+      // --- Pity GLOBAL (toutes chasses confondues) ---
+      // formPity[shape] : rencontres comptées depuis le dernier reset DE CE
+      // POKÉMON dans cette forme, incrémenté pour TOUS les Pokémon de TOUTES
+      // les chasses en même temps (voir bumpGlobalPity), gelé seulement si sa
+      // case "shape" est décochée. Remplace l'ancien h.formCycles[shape].pokemonPity
+      // (scopé par chasse) — voir migrateToGlobalPity().
+      formPity: (p.formPity && typeof p.formPity === 'object') ? p.formPity : {},
+      // shinyResetAt : valeur de state.grandTotal au moment où CE Pokémon a été
+      // trouvé shiny (0 si jamais trouvé). Le pity shiny se calcule à la volée :
+      // state.grandTotal - shinyResetAt (pas de gel possible pour le shiny).
+      shinyResetAt: Number.isFinite(Number(p.shinyResetAt)) ? Number(p.shinyResetAt) : 0
     }));
 
     if(h.total === 0 && h.pokemon.length) h.total = h.pokemon.reduce((n,p)=>n+p.total,0);
@@ -2509,6 +2526,11 @@ function normalizeState(){
     });
   });
 
+  if(!state.formShapeTotals || typeof state.formShapeTotals !== 'object') state.formShapeTotals = {};
+  FORM_SHAPES.forEach(shape=>{ if(!Number.isFinite(Number(state.formShapeTotals[shape]))) state.formShapeTotals[shape] = 0; });
+
+  migrateToGlobalPity();
+
   if(!state.bossCooldowns || typeof state.bossCooldowns !== 'object') state.bossCooldowns = {};
   if(!state.megaStones || typeof state.megaStones !== 'object') state.megaStones = {};
   if(!state.quests || typeof state.quests !== 'object') state.quests = {};
@@ -2528,6 +2550,87 @@ function normalizeState(){
   if(!h || !h.pokemon.some(p=>p.id===state.activePokemonId)){
     state.activePokemonId = h && h.pokemon.length ? h.pokemon[0].id : null;
   }
+}
+
+// Migration one-shot (ancien système "pity par chasse" -> "pity global, toutes
+// chasses confondues"). Tourne à chaque normalizeState() mais ne fait le
+// travail qu'une seule fois par sauvegarde, grâce à state._migratedGlobalPity.
+//
+// Principe :
+// - SHINY : plus besoin de compteur stocké — il se calcule à la volée avec
+//   state.grandTotal - p.shinyResetAt (voir render()). On initialise juste
+//   shinyResetAt à partir de l'ancien h.shinyCycle.pokemonPity si un shiny a
+//   déjà été trouvé un jour (state.shinyTracker.total > 0), sinon 0 pour tout
+//   le monde (personne n'a encore trouvé de shiny).
+// - FORME (par catégorie, Summer/Halloween/...) : reste un compteur stocké
+//   par Pokémon (p.formPity[shape]) à cause du gel par case décochée, mais
+//   n'est plus scopé par chasse : bumpGlobalPity() l'incrémente maintenant
+//   pour TOUS les Pokémon de TOUTES les chasses. Le total de référence
+//   state.formShapeTotals[shape] est démarré à grandTotal si aucune autre
+//   catégorie n'a jamais eu de données (cas le plus courant : une seule
+//   catégorie utilisée depuis le début, donc "toutes les rencontres ont eu
+//   lieu pendant que cette catégorie était sélectionnée" est une hypothèse
+//   sûre) ; sinon on démarre à 0 par prudence plutôt que de deviner.
+// - Pokémon déjà trouvés dans une forme (pokemonCycleStart > 0 sous l'ancien
+//   système) : on reprend tel quel leur ancien compteur "depuis reset" propre
+//   à leur chasse (la donnée la plus fiable dont on dispose) comme valeur de
+//   départ du nouveau compteur global.
+function migrateToGlobalPity(){
+  if(state._migratedGlobalPity) return;
+
+  const activeShape = state.formShape;
+  const grandTotal = Number(state.grandTotal) || 0;
+
+  // Une seule catégorie de forme a-t-elle jamais été utilisée ? (si une autre
+  // catégorie a déjà des données, on ne peut plus supposer que 100% des
+  // rencontres historiques comptent pour activeShape)
+  const otherShapesHaveData = state.hunts.some(h =>
+    Object.entries(h.formCycles || {}).some(([shape, cyc]) =>
+      shape !== activeShape && cyc && cyc.pokemonPity &&
+      Object.values(cyc.pokemonPity).some(v => Number(v) > 0)
+    )
+  );
+  if(!otherShapesHaveData){
+    state.formShapeTotals[activeShape] = Math.max(Number(state.formShapeTotals[activeShape]) || 0, grandTotal);
+  }
+
+  const shinyEverFound = (Number(state.shinyTracker && state.shinyTracker.total) || 0) > 0;
+
+  state.hunts.forEach(h => {
+    const oldFormCycle = (h.formCycles || {})[activeShape] || {};
+    const oldFormPity = oldFormCycle.pokemonPity || {};
+    const oldFormStart = oldFormCycle.pokemonCycleStart || {};
+    const oldShinyPity = (h.shinyCycle || {}).pokemonPity || {};
+
+    h.pokemon.forEach(p => {
+      // --- forme (catégorie active uniquement ; les autres restent à 0,
+      //     elles n'ont jamais eu de données sous l'ancien système non plus) ---
+      if(!(activeShape in p.formPity)){
+        const wasIndividuallyReset = (Number(oldFormStart[p.id]) || 0) > 0;
+        if(wasIndividuallyReset){
+          // Pokémon déjà trouvé dans cette forme : on reprend son ancien
+          // compteur "depuis reset" (propre à sa chasse) tel quel.
+          p.formPity[activeShape] = Math.max(0, Number(oldFormPity[p.id]) || 0);
+        } else if(isPokemonFormEligible(p, activeShape)){
+          // Jamais trouvé, jamais gelé : aligné sur le total global de la catégorie.
+          p.formPity[activeShape] = Number(state.formShapeTotals[activeShape]) || 0;
+        } else {
+          // Gelé (case décochée) : on conserve sa dernière valeur connue.
+          p.formPity[activeShape] = Math.max(0, Number(oldFormPity[p.id]) || 0);
+        }
+      }
+
+      // --- shiny (global d'office, pas de notion de gel) ---
+      if(!p._shinyResetAtMigrated){
+        p.shinyResetAt = shinyEverFound
+          ? Math.max(0, grandTotal - (Number(oldShinyPity[p.id]) || 0))
+          : 0;
+        p._shinyResetAtMigrated = true;
+      }
+    });
+  });
+
+  state._migratedGlobalPity = true;
 }
 
 async function loadState(){
@@ -2757,6 +2860,16 @@ function startHuntTimer(){
 /* =================== FIN TIMERS DE CHASSE ==================== */
 
 function activeHunt(){ return state.hunts.find(h => h.id === state.activeHuntId) || null; }
+// Le pity (forme/shiny) est maintenant GLOBAL, toutes chasses confondues : un
+// Pokémon donné peut avoir besoin d'être retrouvé par son id sans connaître sa
+// chasse d'appartenance (ex: restauration d'un "trouvé" via l'historique).
+function findPokemonGlobalById(pid){
+  for(const h of state.hunts){
+    const p = h.pokemon.find(x => x.id === pid);
+    if(p) return p;
+  }
+  return null;
+}
 function activePokemon(){
   const h = activeHunt();
   return h ? (h.pokemon.find(p=>p.id===state.activePokemonId) || h.pokemon[0] || null) : null;
@@ -2832,41 +2945,47 @@ async function logEncounterByPokemon(pId) {
 }
 
 function bumpGlobalPity(){
-  const h = activeHunt();
   state.shinyTracker.pityCurrent = (Number(state.shinyTracker.pityCurrent)||0) + 1;
   state.formTracker.pityCurrent = (Number(state.formTracker.pityCurrent)||0) + 1;
-  // Idem, mais par Pokémon : h.formCycle pointe déjà vers la forme active
-  // (state.formShape) via l'accesseur -> les autres formes ne sont pas touchées.
-  if(h){
+  // Total global (toutes chasses confondues) de la catégorie de forme active —
+  // référence commune pour la convergence "forme" de tous les Pokémon jamais
+  // trouvés/gelés dans cette forme (voir render() et migrateToGlobalPity()).
+  state.formShapeTotals[state.formShape] = (Number(state.formShapeTotals[state.formShape])||0) + 1;
+  // Pity de forme, PAR POKÉMON, GLOBAL (toutes chasses confondues) : on
+  // parcourt tous les Pokémon de TOUTES les chasses (plus seulement la chasse
+  // active), pour que le résultat soit cohérent quelle que soit la chasse
+  // dans laquelle la rencontre vient d'être loguée. Le shiny n'a plus besoin
+  // d'être incrémenté ici : il se calcule à la volée via state.grandTotal
+  // (pas de notion de gel pour le shiny, donc pas besoin de stocker un
+  // compteur qui pourrait se désynchroniser).
+  state.hunts.forEach(h => {
     h.pokemon.forEach(pokemon => {
-      h.shinyCycle.pokemonPity[pokemon.id] = (Number(h.shinyCycle.pokemonPity[pokemon.id])||0) + 1;
       // Gel par disponibilité de forme : si ce Pokémon n'a pas la forme
       // actuellement sélectionnée (case décochée), son pity de forme reste
       // figé et ne doit pas évoluer, même si une rencontre vient d'avoir lieu.
       if(isPokemonFormEligible(pokemon, state.formShape)){
-        h.formCycle.pokemonPity[pokemon.id] = (Number(h.formCycle.pokemonPity[pokemon.id])||0) + 1;
+        pokemon.formPity = pokemon.formPity || {};
+        pokemon.formPity[state.formShape] = (Number(pokemon.formPity[state.formShape])||0) + 1;
       }
     });
-  }
+  });
 }
 
 // Inverse exact de bumpGlobalPity() : utilisé quand on retire une rencontre
 // (bouton "retirer une rencontre"), pour que les compteurs de pity restent
-// synchronisés avec h.total au lieu de dériver vers le haut au fil des corrections.
+// synchronisés avec grandTotal au lieu de dériver vers le haut au fil des corrections.
 function unbumpGlobalPity(){
-  const h = activeHunt();
   state.shinyTracker.pityCurrent = Math.max(0, (Number(state.shinyTracker.pityCurrent)||0) - 1);
   state.formTracker.pityCurrent = Math.max(0, (Number(state.formTracker.pityCurrent)||0) - 1);
-  if(h){
+  state.formShapeTotals[state.formShape] = Math.max(0, (Number(state.formShapeTotals[state.formShape])||0) - 1);
+  state.hunts.forEach(h => {
     h.pokemon.forEach(pokemon => {
-      h.shinyCycle.pokemonPity[pokemon.id] = Math.max(0, (Number(h.shinyCycle.pokemonPity[pokemon.id])||0) - 1);
-      // Symétrique de bumpGlobalPity : on ne retire ce qui n'a jamais été
-      // ajouté pour un Pokémon gelé sur cette forme.
       if(isPokemonFormEligible(pokemon, state.formShape)){
-        h.formCycle.pokemonPity[pokemon.id] = Math.max(0, (Number(h.formCycle.pokemonPity[pokemon.id])||0) - 1);
+        pokemon.formPity = pokemon.formPity || {};
+        pokemon.formPity[state.formShape] = Math.max(0, (Number(pokemon.formPity[state.formShape])||0) - 1);
       }
     });
-  }
+  });
 }
 
 function registerGlobalHit(tracker){
@@ -2881,25 +3000,53 @@ function registerGlobalHit(tracker){
   tracker.total = (Number(tracker.total)||0) + 1;
 }
 
+// Pity global (forme/shiny) : ces snapshots capturent la valeur de TOUS les
+// Pokémon (toutes chasses confondues) avant une série de "-1", pour que le
+// bouton "↩" puisse tout restaurer d'un coup même après plusieurs "-1"
+// enchaînés — équivalent du snapshot "cycle" complet de l'ancien système,
+// adapté au stockage par-Pokémon désormais global.
+function snapshotAllFormPity(shape){
+  const snap = {};
+  state.hunts.forEach(h => h.pokemon.forEach(p => { snap[p.id] = Number(p.formPity && p.formPity[shape]) || 0; }));
+  return snap;
+}
+function restoreAllFormPity(shape, snap){
+  if(!snap) return;
+  state.hunts.forEach(h => h.pokemon.forEach(p => {
+    if(p.id in snap){ p.formPity = p.formPity || {}; p.formPity[shape] = snap[p.id]; }
+  }));
+}
+function snapshotAllShinyResetAt(){
+  const snap = {};
+  state.hunts.forEach(h => h.pokemon.forEach(p => { snap[p.id] = Number(p.shinyResetAt) || 0; }));
+  return snap;
+}
+function restoreAllShinyResetAt(snap){
+  if(!snap) return;
+  state.hunts.forEach(h => h.pokemon.forEach(p => {
+    if(p.id in snap) p.shinyResetAt = snap[p.id];
+  }));
+}
+
 function decrementShinyEncounter(){
   if(!state.shinyHistory.length){
     showToast('Aucun historique disponible', null);
     return;
   }
-  const h = activeHunt();
   if(!state.shinyUndoOrigin){
     state.shinyUndoOrigin = {
       tracker: JSON.parse(JSON.stringify(state.shinyTracker)),
-      cycle: h ? JSON.parse(JSON.stringify(h.shinyCycle)) : null,
-      huntId: h ? h.id : null
+      shinyResetAtSnapshot: snapshotAllShinyResetAt()
     };
     state.shinyHistoryOrigin = JSON.parse(JSON.stringify(state.shinyHistory));
   }
   const entry = state.shinyHistory.pop();
   state.shinyTracker = entry.tracker;
-  if(entry.cycle){
-    const eh = state.hunts.find(x => x.id === entry.huntId);
-    if(eh) eh.shinyCycle = entry.cycle;
+  // Pity shiny GLOBAL : on restaure le baseline du Pokémon concerné (retrouvé
+  // par id, toutes chasses confondues, plus besoin de connaître sa chasse).
+  if(entry.pokemonId){
+    const ep = findPokemonGlobalById(entry.pokemonId);
+    if(ep) ep.shinyResetAt = Number(entry.beforeShinyResetAt) || 0;
   }
   saveState();
   render();
@@ -2910,10 +3057,7 @@ function undoShinyEncounter(){
   if(!state.shinyUndoOrigin){ showToast('Aucun retour en arrière possible', null); return; }
   const origin = state.shinyUndoOrigin;
   state.shinyTracker = origin.tracker;
-  if(origin.cycle){
-    const h = state.hunts.find(x => x.id === origin.huntId);
-    if(h) h.shinyCycle = origin.cycle;
-  }
+  restoreAllShinyResetAt(origin.shinyResetAtSnapshot);
   state.shinyHistory = state.shinyHistoryOrigin || state.shinyHistory;
   state.shinyUndoOrigin = null;
   state.shinyHistoryOrigin = null;
@@ -2927,20 +3071,24 @@ function decrementFormEncounter(){
     showToast('Aucun historique disponible', null);
     return;
   }
-  const h = activeHunt();
   if(!state.formUndoOrigin){
     state.formUndoOrigin = {
       tracker: JSON.parse(JSON.stringify(state.formTracker)),
-      cycle: h ? JSON.parse(JSON.stringify(h.formCycle)) : null,
-      huntId: h ? h.id : null
+      shape: state.formShape,
+      formPitySnapshot: snapshotAllFormPity(state.formShape)
     };
     state.formHistoryOrigin = JSON.parse(JSON.stringify(state.formHistory));
   }
   const entry = state.formHistory.pop();
   state.formTracker = entry.tracker;
-  if(entry.cycle){
-    const eh = state.hunts.find(x => x.id === entry.huntId);
-    if(eh) eh.formCycle = entry.cycle;
+  // Pity de forme GLOBAL : on restaure le baseline du Pokémon concerné pour
+  // la catégorie où il avait été trouvé (retrouvé par id, toutes chasses confondues).
+  if(entry.pokemonId && entry.shape){
+    const ep = findPokemonGlobalById(entry.pokemonId);
+    if(ep){
+      ep.formPity = ep.formPity || {};
+      ep.formPity[entry.shape] = Number(entry.beforeFormPity) || 0;
+    }
   }
   saveState();
   render();
@@ -2951,10 +3099,7 @@ function undoFormEncounter(){
   if(!state.formUndoOrigin){ showToast('Aucun retour en arrière possible', null); return; }
   const origin = state.formUndoOrigin;
   state.formTracker = origin.tracker;
-  if(origin.cycle){
-    const h = state.hunts.find(x => x.id === origin.huntId);
-    if(h) h.formCycle = origin.cycle;
-  }
+  restoreAllFormPity(origin.shape || state.formShape, origin.formPitySnapshot);
   state.formHistory = state.formHistoryOrigin || state.formHistory;
   state.formUndoOrigin = null;
   state.formHistoryOrigin = null;
@@ -3034,6 +3179,11 @@ async function render(){
   document.getElementById('formRateSub').textContent = ft.total && state.grandTotal
     ? `taux ${((ft.total / state.grandTotal) * 100).toFixed(2)}% · moyenne ${(state.grandTotal / ft.total).toFixed(1)}`
     : 'taux — · moyenne —';
+  // Total global (toutes chasses confondues) de la catégorie de forme
+  // actuellement sélectionnée — la référence que suit la convergence "forme
+  // Pokémon" de tout Pokémon jamais trouvé/gelé dans cette forme.
+  document.getElementById('formShapeTotalSub').textContent =
+    `Total ${state.formShape} : ${Number(state.formShapeTotals && state.formShapeTotals[state.formShape]) || 0}`;
 
   document.getElementById('formTotalEdit').onclick = () => editStatValue('Corriger le total forme alternative', ft.total, (v)=>{ state.formTracker.total = v; saveState(); render(); });
   document.getElementById('formPityCurrentEdit').onclick = () => editStatValue('Corriger "depuis la dernière" (forme)', ft.pityCurrent, (v)=>{ state.formTracker.pityCurrent = v; saveState(); render(); });
@@ -3182,22 +3332,21 @@ async function render(){
 
   const rareRateValue = analysisType === 'SHINY' ? 8196 : (FORM_SHAPE_DENOM[state.formShape] || 750);
   const analysisLabel = analysisType === 'SHINY' ? 'SHINY' : state.formShape.toUpperCase();
-  const cycle = analysisType === 'SHINY' ? h.shinyCycle : h.formCycle;
   const currentRarePity = analysisType === 'SHINY' ? (state.shinyTracker.pityCurrent || 0) : (state.formTracker.pityCurrent || 0);
 
   const pokemonRate = p ? pokemonEncounterRate(h, p) : 0;
-  // N pour les deux courbes du graphique : on lit directement les compteurs
-  // "pity" déjà fiables et déjà gelés par forme (mêmes valeurs que celles
-  // affichées dans l'onglet forme / shiny de la colonne de gauche), plutôt
-  // que de recalculer depuis h.total (partagé entre toutes les formes et
-  // jamais gelé — c'était la source du désync N=2738 / pity 0 constaté sur Xmas).
+  // N pour les deux courbes du graphique :
   // - encountersSinceCycle (courbe "Cycle", globale) = currentRarePity,
   //   identique à formTracker.pityCurrent / shinyTracker.pityCurrent.
-  // - encountersSinceReset (courbe "Après reset", ce Pokémon précis) =
-  //   cycle.pokemonPity[p.id], gelé pour cette forme tant qu'elle n'est pas
-  //   sélectionnée, remis à 0 uniquement quand CE Pokémon est trouvé.
+  // - encountersSinceReset (courbe "Après reset", ce Pokémon précis) = pity
+  //   GLOBAL (toutes chasses confondues, voir bumpGlobalPity/migrateToGlobalPity) :
+  //   * SHINY -> calculé à la volée, state.grandTotal - p.shinyResetAt (pas de gel possible).
+  //   * FORME -> p.formPity[state.formShape], gelé tant que la case de cette
+  //     forme est décochée, remis à 0 uniquement quand CE Pokémon est trouvé.
   const encountersSinceCycle = p ? currentRarePity : 0;
-  const encountersSinceReset = p ? (Number(cycle.pokemonPity && cycle.pokemonPity[p.id]) || 0) : 0;
+  const encountersSinceReset = !p ? 0 : (analysisType === 'SHINY'
+    ? Math.max(0, (Number(state.grandTotal)||0) - (Number(p.shinyResetAt)||0))
+    : (Number(p.formPity && p.formPity[state.formShape]) || 0));
 
   // Convergence cycle : GLOBALE, probabilité cumulative 1-(1-p)^N depuis le dernier reset global (tous Pokémon confondus)
   const convergenceCycle = p ? cumulativeFormProbability(pokemonRate, encountersSinceCycle, rareRateValue) : 0;
@@ -3372,6 +3521,19 @@ async function render(){
   // pour le replacer tel quel après coup (voir plus bas), au lieu de
   // laisser le HTML en recréer un vide.
   const existingCaptureVideoEl = document.getElementById('captureVideo');
+
+  // Même souci que le <video> ci-dessus, mais pour le défilement de la page :
+  // #mainArea n'a pas son propre scroll interne (pas d'overflow défini), c'est
+  // la FENÊTRE qui défile. Reconstruire tout le contenu via main.innerHTML
+  // recrée aussi les sprites <img> des cartes Pokémon, qui repartent d'une
+  // hauteur nulle/par défaut tant qu'ils n'ont pas fini de charger : la page
+  // devient brièvement plus courte que la position de scroll actuelle, et le
+  // navigateur clampe alors le scroll vers le haut — d'où le petit saut rapide
+  // de bas en haut à chaque comptage si on regardait une carte plus bas dans
+  // la liste. On mémorise la position de la fenêtre avant de reconstruire,
+  // puis on la restaure juste après (et une seconde fois au frame suivant,
+  // une fois la mise en page stabilisée, au cas où le clamp se reproduirait).
+  const savedScrollY = window.scrollY;
 
   main.innerHTML = `
     <div class="hunt-header">
@@ -3566,6 +3728,13 @@ async function render(){
       freshCaptureVideoEl.replaceWith(existingCaptureVideoEl);
     }
   }
+
+  // Restaure la position de défilement de la fenêtre mémorisée avant la
+  // reconstruction — supprime le saut visuel à chaque rencontre comptée (voir
+  // savedScrollY ci-dessus). Une deuxième restauration au frame suivant
+  // rattrape le clamp si des sprites finissent de charger juste après.
+  window.scrollTo(window.scrollX, savedScrollY);
+  requestAnimationFrame(() => window.scrollTo(window.scrollX, savedScrollY));
 
   setupEventListeners(h);
   updateTimerDisplays();
@@ -4662,23 +4831,23 @@ function markFormFound(p){
     return;
   }
   const before = JSON.parse(JSON.stringify(state.formTracker));
-  const beforeCycle = JSON.parse(JSON.stringify(h.formCycles[capturedShape]));
-  const entry = { tracker: before, cycle: beforeCycle, huntId: h.id };
+  // pity de forme GLOBAL (toutes chasses confondues) : on ne sauvegarde plus
+  // que la valeur individuelle de ce Pokémon pour ce shape, à restaurer en cas
+  // d'annulation — plus besoin de snapshot par chasse.
+  const beforeFormPity = Number(p.formPity && p.formPity[capturedShape]) || 0;
+  const entry = { tracker: before, huntId: h.id, pokemonId: p.id, shape: capturedShape, beforeFormPity };
   state.formHistory.push(entry);
   state.formUndoOrigin = null;
   state.formHistoryOrigin = null;
   registerGlobalHit(state.formTracker);
-  h.pokemon.forEach(pokemon => {
-    h.formCycles[capturedShape].pokemonStart[pokemon.id] = h.total;
-  });
-  h.formCycles[capturedShape].pokemonCycleStart[p.id] = h.total;
-  h.formCycles[capturedShape].pokemonPity[p.id] = 0;
+  p.formPity = p.formPity || {};
+  p.formPity[capturedShape] = 0;
   analysisType = 'FORME';
   saveState();
   render();
   showToast(`Forme de ${p.name} trouvée (${capturedShape}) — convergences réinitialisées`, async ()=>{
     state.formTrackers[capturedShape] = before;
-    h.formCycles[capturedShape] = beforeCycle;
+    p.formPity[capturedShape] = beforeFormPity;
     const hist = state.formHistories[capturedShape] || [];
     const idx = hist.indexOf(entry);
     if(idx !== -1) hist.splice(idx, 1);
@@ -4691,23 +4860,21 @@ function markShinyFound(p){
   const h = activeHunt();
   if(!h || !p) return;
   const before = JSON.parse(JSON.stringify(state.shinyTracker));
-  const beforeCycle = JSON.parse(JSON.stringify(h.shinyCycle));
-  const entry = { tracker: before, cycle: beforeCycle, huntId: h.id };
+  // shiny GLOBAL (toutes chasses confondues, calculé à la volée) : on
+  // sauvegarde juste l'ancien baseline de ce Pokémon pour pouvoir l'annuler.
+  const beforeShinyResetAt = Number(p.shinyResetAt) || 0;
+  const entry = { tracker: before, huntId: h.id, pokemonId: p.id, beforeShinyResetAt };
   state.shinyHistory.push(entry);
   state.shinyUndoOrigin = null;
   state.shinyHistoryOrigin = null;
   registerGlobalHit(state.shinyTracker);
-  h.pokemon.forEach(pokemon => {
-    h.shinyCycle.pokemonStart[pokemon.id] = h.total;
-  });
-  h.shinyCycle.pokemonCycleStart[p.id] = h.total;
-  h.shinyCycle.pokemonPity[p.id] = 0;
+  p.shinyResetAt = Number(state.grandTotal) || 0;
   analysisType = 'SHINY';
   saveState();
   render();
   showToast(`Shiny de ${p.name} trouvé — convergences réinitialisées`, async ()=>{
     state.shinyTracker = before;
-    h.shinyCycle = beforeCycle;
+    p.shinyResetAt = beforeShinyResetAt;
     const idx = state.shinyHistory.indexOf(entry);
     if(idx !== -1) state.shinyHistory.splice(idx, 1);
     saveState();
@@ -4722,19 +4889,13 @@ async function removePokemon(p){
     showToast('Une chasse doit garder au moins un Pokémon', null);
     return;
   }
-  const oldTotal = p.total || 0;
-  if(oldTotal > 0){
-    h.total = Math.max(0, h.total - oldTotal);
-    state.grandTotal = Math.max(0, state.grandTotal - oldTotal);
-    state.shinyTracker.pityCurrent = Math.max(0, state.shinyTracker.pityCurrent - oldTotal);
-    state.formTracker.pityCurrent = Math.max(0, state.formTracker.pityCurrent - oldTotal);
-    h.pokemon.forEach(pokemon => {
-      h.shinyCycle.pokemonPity[pokemon.id] = Math.max(0, (Number(h.shinyCycle.pokemonPity[pokemon.id])||0) - oldTotal);
-      if(isPokemonFormEligible(pokemon, state.formShape)){
-        h.formCycle.pokemonPity[pokemon.id] = Math.max(0, (Number(h.formCycle.pokemonPity[pokemon.id])||0) - oldTotal);
-      }
-    });
-  }
+  // Retirer un Pokémon est une correction PUREMENT LOCALE à ce Pokémon : on ne
+  // touche plus à h.total, state.grandTotal, ni à aucun compteur de pity
+  // (global ou par catégorie de forme). Ces compteurs enregistrent le nombre
+  // réel de rencontres loguées et servent de référence PARTAGÉE à tous les
+  // autres Pokémon (voir bumpGlobalPity) — les faire varier ici ferait dériver
+  // la convergence de tout le monde à cause d'une correction sur un seul
+  // Pokémon, exactement le bug qu'on vient de corriger.
   h.pokemon = h.pokemon.filter(x=>x.id!==p.id);
   state.activePokemonId = h.pokemon[0].id;
   saveState();
@@ -4753,23 +4914,12 @@ function modifyHaCount(pid, delta){
 
 function resetPokemon(p){
   if(!p) return;
-  const h = activeHunt();
-  const oldTotal = p.total || 0;
   const old = { total: p.total, haTotal: p.haTotal, sinceShiny: p.sinceShiny, sinceForm: p.sinceForm, pityCurrent: p.pityCurrent };
-  
-  if(h && oldTotal > 0){
-    h.total = Math.max(0, h.total - oldTotal);
-    state.grandTotal = Math.max(0, state.grandTotal - oldTotal);
-    state.shinyTracker.pityCurrent = Math.max(0, state.shinyTracker.pityCurrent - oldTotal);
-    state.formTracker.pityCurrent = Math.max(0, state.formTracker.pityCurrent - oldTotal);
-    h.pokemon.forEach(pokemon => {
-      h.shinyCycle.pokemonPity[pokemon.id] = Math.max(0, (Number(h.shinyCycle.pokemonPity[pokemon.id])||0) - oldTotal);
-      if(isPokemonFormEligible(pokemon, state.formShape)){
-        h.formCycle.pokemonPity[pokemon.id] = Math.max(0, (Number(h.formCycle.pokemonPity[pokemon.id])||0) - oldTotal);
-      }
-    });
-  }
 
+  // Reset PUREMENT LOCAL à ce Pokémon (voir commentaire de removePokemon) :
+  // on ne touche plus à h.total / state.grandTotal / aux compteurs de pity
+  // globaux ou par catégorie — ils restent l'historique réel des rencontres,
+  // partagé comme référence par tous les autres Pokémon.
   p.total = 0;
   p.haTotal = 0;
   p.sinceShiny = 0;
@@ -4783,18 +4933,6 @@ function resetPokemon(p){
     p.sinceShiny = old.sinceShiny;
     p.sinceForm = old.sinceForm;
     p.pityCurrent = old.pityCurrent;
-    if(h && oldTotal > 0){
-      h.total += oldTotal;
-      state.grandTotal += oldTotal;
-      state.shinyTracker.pityCurrent += oldTotal;
-      state.formTracker.pityCurrent += oldTotal;
-      h.pokemon.forEach(pokemon => {
-        h.shinyCycle.pokemonPity[pokemon.id] = (Number(h.shinyCycle.pokemonPity[pokemon.id])||0) + oldTotal;
-        if(isPokemonFormEligible(pokemon, state.formShape)){
-          h.formCycle.pokemonPity[pokemon.id] = (Number(h.formCycle.pokemonPity[pokemon.id])||0) + oldTotal;
-        }
-      });
-    }
     saveState();
     await render();
   });
