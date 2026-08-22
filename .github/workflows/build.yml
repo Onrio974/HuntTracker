@@ -1,49 +1,99 @@
-name: Build Compteur Pokémon (Windows / macOS / Linux)
+name: Build App
 
+# - push / workflow_dispatch : build rapide de test (Windows + Mac), artifacts
+#   téléchargeables depuis l'onglet Actions.
+# - release (published) : quand tu publies une Release GitHub (bouton
+#   "Draft a new release" dans la colonne de droite du repo, tag comme
+#   v1.0.0, puis "Publish release"), les deux jobs ci-dessous tournent et
+#   attachent en plus l'installeur .exe ET le .dmg construits directement
+#   sur cette Release, comme une vraie version publiée du logiciel.
 on:
-  workflow_dispatch:
-  push:
-    tags:
-      - "v*"
+  push: {}
+  workflow_dispatch: {}
+  release:
+    types: [published]
+
+# Nécessaire pour que les jobs puissent déposer des fichiers sur la Release
+# (par défaut, le jeton GITHUB_TOKEN fourni automatiquement par GitHub est
+# en lecture seule sur le contenu du repo).
+permissions:
+  contents: write
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            script: build:win
-          - os: macos-latest
-            script: build:mac
-          - os: ubuntu-latest
-            script: build:linux
-
-    runs-on: ${{ matrix.os }}
-
+  build-windows:
+    runs-on: windows-latest
     steps:
-      - name: Récupérer le code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Installer Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "22"
 
-      - name: Installer les dépendances
+      - name: Install npm dependencies
         run: npm install
 
-      - name: Compiler l'app (${{ matrix.os }})
-        run: npm run ${{ matrix.script }}
+      - name: Build Windows app (installeur + portable)
+        run: npm run build
 
-      - name: Publier les fichiers compilés
+      - name: Upload build artifacts (onglet Actions)
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.os }}
+          name: HuntTracker-windows
+          path: dist/*.exe
+          if-no-files-found: error
+
+      - name: Attach installer(s) to the GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.exe
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Build macOS app (dmg + zip, Intel + Apple Silicon)
+        # "identity: null" dans package.json signifie qu'aucun certificat
+        # Apple Developer payant n'est utilisé : le résultat est signé
+        # "ad-hoc" (signature minimale automatique, gratuite) plutôt que
+        # notarié par Apple. C'est SUFFISANT pour que l'app se lance
+        # normalement (contrairement à une app pas signée du tout, qui
+        # peut s'ouvrir puis se fermer aussitôt sur un Mac Apple Silicon -
+        # M1/M2/M3/M4 - car macOS y exige au moins une signature ad-hoc
+        # pour exécuter quoi que ce soit). En revanche, au tout premier
+        # lancement, macOS Gatekeeper affichera quand même un avertissement
+        # "développeur non identifié" (normal pour une app non notariée) :
+        # il faut alors faire clic droit → Ouvrir (au lieu d'un double-clic)
+        # une seule fois pour l'autoriser. Une notarisation complète (plus
+        # de message du tout) nécessite un compte Apple Developer payant
+        # (99$/an) — possible à ajouter plus tard si besoin.
+        run: npm run build:mac
+
+      - name: Upload build artifacts (onglet Actions)
+        uses: actions/upload-artifact@v4
+        with:
+          name: HuntTracker-mac
           path: |
-            dist/*.exe
             dist/*.dmg
             dist/*.zip
-            dist/*.AppImage
-            dist/*.deb
-          if-no-files-found: warn
+          if-no-files-found: error
+
+      - name: Attach installer(s) to the GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.dmg
+            dist/*.zip
