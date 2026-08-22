@@ -173,12 +173,25 @@
     border-radius:999px;padding:1px 7px;line-height:1.5;
   }
   .boss-dropdown-panel{
-    display:none;position:absolute;top:calc(100% + 8px);left:0;
+    /* position:fixed (et non absolute) : .titlebar (l'ancêtre direct de ces
+       panneaux via .boss-dropdown-wrap) a overflow-y:hidden pour empêcher la
+       barre de grandir en hauteur quand ses boutons débordent (voir le
+       commentaire sur .titlebar plus haut) — mais un enfant en
+       position:absolute reste soumis au clip d'overflow de son ancêtre,
+       QUELLE QUE SOIT sa valeur de z-index : le panneau se retrouvait donc
+       invisible/coupé dès qu'il dépassait la hauteur de 52px de la barre,
+       ce qui pouvait ressembler à "le menu apparaît derrière" le reste de
+       la page. position:fixed sort le panneau de ce flux de clipping (il se
+       positionne par rapport à la fenêtre, pas à un ancêtre) ; sa position
+       exacte (top/left) est alors calculée en JS juste avant son ouverture,
+       voir repositionDropdownPanel().
+    */
+    display:none;position:fixed;top:0;left:0;
     width:360px;max-height:70vh;
     background:linear-gradient(180deg,#0e2a40,#081b2b);
     border:1px solid var(--border);border-radius:12px;
     box-shadow:0 14px 34px rgba(0,0,0,.5);
-    z-index:40;overflow:hidden;flex-direction:column;
+    z-index:400;overflow:hidden;flex-direction:column;
   }
   .boss-dropdown-wrap.open .boss-dropdown-panel{display:flex;}
   .boss-panel-header{padding:10px;border-bottom:1px solid #1f4a67;flex-shrink:0;}
@@ -6002,44 +6015,65 @@ function closeAllDropdownsExcept(exceptWrapId){
 }
 
 /* ============ POSITIONNEMENT AUTO DES PANNEAUX DÉROULANTS ============
-   Chaque .boss-dropdown-panel s'ouvre par défaut collé au bord gauche de
-   son bouton (left:0, hérité du CSS). Sur une fenêtre étroite ou avec une
-   police/résolution différente (ex. certains environnements Linux), les
-   derniers boutons de la barre (Récolte, Donjon, Excavations...) peuvent
-   se retrouver proches du bord droit de la fenêtre : le panneau déborde
-   alors hors du cadre de l'app au lieu de rester dedans.
-   Cette fonction mesure, une fois le panneau rendu visible, s'il dépasse
-   le bord droit (ou gauche) de la fenêtre et corrige sa position en
-   l'ancrant depuis le bord opposé plutôt que de le laisser déborder.
+   .boss-dropdown-panel est en position:fixed (voir le commentaire sur cette
+   règle dans le CSS) : sa position n'est donc PLUS calculée automatiquement
+   par le navigateur par rapport à son bouton (comme le ferait un
+   position:absolute) — il faut la calculer nous-mêmes en JS à partir de la
+   position réelle du bouton à l'écran (getBoundingClientRect), à chaque
+   ouverture. Cette fonction fait ça, ET corrige en plus le débordement
+   horizontal (un panneau proche du bord droit de la fenêtre s'ancre depuis
+   la droite plutôt que de déborder hors du cadre) ainsi que, désormais, le
+   débordement vertical bas (fenêtre peu haute : le panneau remonte au lieu
+   de dépasser en bas de l'écran).
    Générique : s'applique à TOUS les .boss-dropdown-wrap (Boss, Méga
    Gemmes, Quêtes, Excavations, Daily Quest, Récolte, Donjon, Membership,
    Transit Pass, Safari, Langue), sans avoir à toucher chacun de leurs
    gestionnaires de clic individuels. */
 function repositionDropdownPanel(wrap){
+  const btn = wrap.querySelector(':scope > .boss-dropdown-btn');
   const panel = wrap.querySelector(':scope > .boss-dropdown-panel');
-  if (!panel) return;
-  // Réinitialise les overrides précédents avant de mesurer, pour ne pas
-  // accumuler un état obsolète entre deux ouvertures.
-  panel.style.left = '';
-  panel.style.right = '';
+  if (!btn || !panel) return;
   const margin = 8;
-  const rect = panel.getBoundingClientRect();
-  if (rect.width === 0 && rect.height === 0) return; // panneau pas encore affiché
+  const btnRect = btn.getBoundingClientRect();
+  if (btnRect.width === 0 && btnRect.height === 0) return; // bouton pas encore affiché
+
   const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
-  if (rect.right > viewportWidth - margin) {
-    panel.style.left = 'auto';
-    panel.style.right = '0';
-    const rect2 = panel.getBoundingClientRect();
-    if (rect2.left < margin) {
-      // Le panneau ne tient ni ancré à gauche ni ancré à droite (fenêtre
-      // trop étroite pour sa largeur) : on le cale au plus près du bord
-      // gauche visible de la fenêtre plutôt que de le laisser déborder
-      // des deux côtés.
-      const wrapRect = wrap.getBoundingClientRect();
-      panel.style.right = 'auto';
-      panel.style.left = (margin - wrapRect.left) + 'px';
-    }
+  const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+
+  // Largeur réelle du panneau : on la lit sur le panneau lui-même (fixée en
+  // CSS à 360px, ou 270px pour Récolte/Donjon via un style inline — voir
+  // leur HTML), donc on se base sur son offsetWidth plutôt que de la
+  // deviner ici.
+  const panelWidth = panel.offsetWidth || 360;
+
+  // Ancrage horizontal par défaut : bord gauche du panneau aligné sur le
+  // bord gauche du bouton (comme avant, avec left:0 avant ce correctif).
+  let left = btnRect.left;
+  if (left + panelWidth > viewportWidth - margin) {
+    // Déborde à droite : on ancre plutôt le bord DROIT du panneau sur le
+    // bord droit du bouton.
+    left = btnRect.right - panelWidth;
   }
+  if (left < margin) {
+    // Ne tient toujours pas (fenêtre trop étroite pour la largeur du
+    // panneau) : on le cale au plus près du bord gauche visible.
+    left = margin;
+  }
+
+  // Ancrage vertical par défaut : juste sous le bouton (comme le
+  // "top:calc(100% + 8px)" d'avant ce correctif).
+  let top = btnRect.bottom + margin;
+  const panelMaxHeight = Math.min(panel.offsetHeight || 0, viewportHeight * 0.7);
+  if (top + panelMaxHeight > viewportHeight - margin) {
+    // Ne tient pas en dessous (fenêtre peu haute, ou bouton proche du bas) :
+    // on remonte le panneau juste au-dessus du bouton s'il y a la place,
+    // sinon on le colle en haut de la fenêtre.
+    const aboveTop = btnRect.top - margin - panelMaxHeight;
+    top = aboveTop >= margin ? aboveTop : margin;
+  }
+
+  panel.style.left = left + 'px';
+  panel.style.top = top + 'px';
 }
 
 function repositionOpenDropdownPanels(){
