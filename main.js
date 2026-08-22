@@ -38,6 +38,39 @@ const appIcon = resolveAppIcon();
 // matérielles particulières. Ne change rien au fonctionnement de l'app.
 app.commandLine.appendSwitch('disable-http-cache', 'false');
 
+// Désactive complètement l'autofill natif de Chromium (suggestions de
+// recherche/adresses/mots de passe). Sans ça, sur certaines configs Linux,
+// Chromium peut faire apparaître une popup native (rendue par la boîte à
+// outils du système, PAS par le DOM de la page) juste sous un <input> texte
+// dès qu'on tape dedans — avec un placeholder générique du navigateur
+// ("Search for a site...") qui n'a rien à voir avec l'app. Cette popup
+// native se dessine PAR-DESSUS le contenu de la page (elle ignore le
+// z-index/CSS de l'app), ce qui, pour les menus déroulants Boss/Méga
+// Gemmes/Quêtes/etc. (qui ont un champ de recherche juste au-dessus de la
+// liste), donne l'impression que "le menu n'affiche plus que la barre de
+// recherche" : la liste est toujours là dans le DOM, elle est juste cachée
+// visuellement sous cette popup native. On coupe cette fonctionnalité à la
+// racine (aucune perte pour l'app : elle n'a besoin d'aucune suggestion
+// native, tous ses champs de recherche sont gérés par son propre JS).
+app.commandLine.appendSwitch('disable-features', 'Autofill,AutofillServerCommunication,AutofillShowTypePredictions');
+
+// Sous Linux, quand une grosse partie de la page se redessine d'un coup
+// (ex. compteur d'un Pokémon qui vient d'être capturé : la liste de
+// Pokémon, le graphique de convergence et d'autres blocs se reconstruisent
+// tous en même temps), certains pilotes GPU open-source (Mesa) affichent
+// brièvement une image noire pendant que le compositeur de Chromium
+// recalcule les calques — un artefact de rendu accéléré matériellement très
+// courant sur Electron+Linux, plutôt qu'un bug de l'app elle-même. La
+// parade standard est de désactiver l'accélération matérielle sur cette
+// plateforme (l'app est une interface 2D assez simple, le coût en
+// performance est négligeable) : Chromium passe alors en rendu logiciel,
+// plus lent mais sans ces flashs noirs pendant les gros redessins. On ne le
+// fait QUE sous Linux : Windows/macOS n'ont pas ce souci et profitent de
+// l'accélération matérielle normalement.
+if (process.platform === 'linux') {
+  app.disableHardwareAcceleration();
+}
+
 let mainWindow = null;
 let pickerWindow = null;
 
@@ -183,6 +216,28 @@ ipcMain.handle('controls:setAlwaysOnTop', (event, flag) => {
   // fenêtre de jeu qui se dispute elle aussi le premier plan (voir le
   // commentaire sur le gestionnaire 'blur' dans createWindow).
   mainWindow.setAlwaysOnTop(alwaysOnTopEnabled, 'screen-saver');
+
+  // Sous Linux, le "toujours au premier plan" d'Electron/GTK ne suffit
+  // souvent pas face à une fenêtre de jeu qui prend tout l'écran : beaucoup
+  // de gestionnaires de fenêtres (GNOME/KDE...) placent une appli
+  // plein-écran dans une couche d'affichage à part, au-dessus de toute
+  // fenêtre "toujours au-dessus" classique. setVisibleOnAllWorkspaces aide
+  // dans certains cas (la fenêtre reste visible même si le jeu bascule sur
+  // un autre bureau/espace de travail), donc on l'active en plus par
+  // sécurité. ATTENTION : sous une session Wayland (de plus en plus
+  // fréquente par défaut sur les distributions récentes), Electron ne peut
+  // tout simplement PAS forcer une fenêtre au-dessus des autres par
+  // conception du protocole (restriction volontaire de Wayland, pas un bug
+  // de cette app) - dans ce cas, la seule solution fiable est d'utiliser
+  // l'option "toujours au premier plan" du gestionnaire de fenêtres
+  // lui-même (clic droit sur la barre de titre / le bouton dans la barre
+  // des tâches selon l'environnement de bureau), indépendante de l'app.
+  if (process.platform === 'linux') {
+    try {
+      mainWindow.setVisibleOnAllWorkspaces(alwaysOnTopEnabled, { visibleOnFullScreen: true });
+    } catch (ignored) {}
+  }
+
   return mainWindow.isAlwaysOnTop();
 });
 
