@@ -54,22 +54,20 @@ app.commandLine.appendSwitch('disable-http-cache', 'false');
 // native, tous ses champs de recherche sont gérés par son propre JS).
 app.commandLine.appendSwitch('disable-features', 'Autofill,AutofillServerCommunication,AutofillShowTypePredictions');
 
-// Sous Linux, quand une grosse partie de la page se redessine d'un coup
-// (ex. compteur d'un Pokémon qui vient d'être capturé : la liste de
-// Pokémon, le graphique de convergence et d'autres blocs se reconstruisent
-// tous en même temps), certains pilotes GPU open-source (Mesa) affichent
-// brièvement une image noire pendant que le compositeur de Chromium
-// recalcule les calques — un artefact de rendu accéléré matériellement très
-// courant sur Electron+Linux, plutôt qu'un bug de l'app elle-même. La
-// parade standard est de désactiver l'accélération matérielle sur cette
-// plateforme (l'app est une interface 2D assez simple, le coût en
-// performance est négligeable) : Chromium passe alors en rendu logiciel,
-// plus lent mais sans ces flashs noirs pendant les gros redessins. On ne le
-// fait QUE sous Linux : Windows/macOS n'ont pas ce souci et profitent de
-// l'accélération matérielle normalement.
-if (process.platform === 'linux') {
-  app.disableHardwareAcceleration();
-}
+// Quand une grosse partie de la page se redessine d'un coup (ex. compteur
+// d'un Pokémon qui vient d'être capturé : render() remplace en une seule
+// fois tout le contenu de #mainArea en innerHTML — liste de Pokémon,
+// graphique de convergence, panneaux, etc., voir la fonction render() dans
+// index.html), le compositeur GPU de Chromium peut afficher brièvement une
+// image noire pendant qu'il recalcule les calques — un artefact de rendu
+// accéléré matériellement pendant un gros redessin synchrone. On croyait au
+// départ ce souci limité à Linux (pilotes Mesa), mais il a aussi été
+// signalé sous Windows : on désactive donc l'accélération matérielle sur
+// TOUTES les plateformes plutôt que juste Linux. L'app est une interface 2D
+// assez simple (pas de jeu/3D à afficher), le coût en performance de passer
+// en rendu logiciel est négligeable comparé au bénéfice de ne plus avoir
+// ces flashs noirs à chaque rencontre comptée.
+app.disableHardwareAcceleration();
 
 let mainWindow = null;
 let pickerWindow = null;
@@ -79,6 +77,12 @@ let pickerWindow = null;
 // réapplique ce flag après chaque perte de focus pour éviter que la
 // fenêtre reste bloquée en arrière-plan sous Windows).
 let alwaysOnTopEnabled = false;
+
+// Minuteur qui réapplique périodiquement le mode "toujours au premier plan"
+// (voir startAlwaysOnTopWatchdog/stopAlwaysOnTopWatchdog plus bas) — voir le
+// commentaire sur son démarrage dans controls:setAlwaysOnTop pour le
+// pourquoi (les gestionnaires 'blur'/'focus' seuls ne suffisent pas).
+let alwaysOnTopWatchdog = null;
 
 // Mémorise la taille/position "normale" de la fenêtre avant de passer en
 // mode compact, pour pouvoir la restaurer exactement au clic sur "Agrandir".
@@ -199,6 +203,40 @@ function createWindow() {
   };
   mainWindow.on('blur', reassertAlwaysOnTop);
   mainWindow.on('focus', reassertAlwaysOnTop);
+
+  // Le minuteur (voir startAlwaysOnTopWatchdog) doit s'arrêter avec la
+  // fenêtre, sinon il continuerait à tourner dans le vide (et à planter en
+  // essayant d'utiliser une fenêtre détruite) une fois l'app fermée.
+  mainWindow.on('closed', stopAlwaysOnTopWatchdog);
+}
+
+// Les gestionnaires 'blur'/'focus' ci-dessus ne suffisaient pas : ils ne se
+// déclenchent QUE quand NOTRE fenêtre change elle-même de focus, or un jeu
+// qui reprend le premier plan tout seul (ex. quand il affiche une nouvelle
+// zone, une fenêtre modale interne, ou simplement en continuant de
+// tourner) peut se replacer au-dessus sans que le tracker perde/regagne le
+// focus au sens d'Electron — auquel cas 'blur'/'focus' ne se déclenchent
+// jamais et le tracker reste bloqué en arrière-plan. Signalé aussi bien
+// sous Windows que sous Linux. On réapplique donc le flag topmost en plus
+// à intervalle régulier, tant que le mode est actif, indépendamment de tout
+// évènement de focus — nettement plus robuste face à une fenêtre de jeu qui
+// se dispute le premier plan de façon imprévisible.
+function startAlwaysOnTopWatchdog() {
+  if (alwaysOnTopWatchdog) return;
+  alwaysOnTopWatchdog = setInterval(() => {
+    if (!alwaysOnTopEnabled || !mainWindow || mainWindow.isDestroyed()) return;
+    if (!mainWindow.isAlwaysOnTop()) {
+      mainWindow.setAlwaysOnTop(true, 'screen-saver');
+    }
+    mainWindow.moveTop();
+  }, 700);
+}
+
+function stopAlwaysOnTopWatchdog() {
+  if (alwaysOnTopWatchdog) {
+    clearInterval(alwaysOnTopWatchdog);
+    alwaysOnTopWatchdog = null;
+  }
 }
 
 // --- Contrôles de fenêtre exposés à la page (toujours au premier plan,
@@ -236,6 +274,15 @@ ipcMain.handle('controls:setAlwaysOnTop', (event, flag) => {
     try {
       mainWindow.setVisibleOnAllWorkspaces(alwaysOnTopEnabled, { visibleOnFullScreen: true });
     } catch (ignored) {}
+  }
+
+  // Voir startAlwaysOnTopWatchdog/stopAlwaysOnTopWatchdog : réapplique le
+  // flag topmost en continu tant que le mode est actif (signalé insuffisant
+  // sous Windows ET Linux avec les seuls gestionnaires 'blur'/'focus').
+  if (alwaysOnTopEnabled) {
+    startAlwaysOnTopWatchdog();
+  } else {
+    stopAlwaysOnTopWatchdog();
   }
 
   return mainWindow.isAlwaysOnTop();
