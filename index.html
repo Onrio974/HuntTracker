@@ -45,17 +45,37 @@
   .titlebar{
     display:flex;
     align-items:center;
-    flex-wrap:wrap;
+    /* flex-wrap:nowrap + overflow-x:auto plutôt que flex-wrap:wrap : avec
+       wrap, rétrécir la fenêtre (désormais possible bien plus bas, voir
+       main.js) faisait passer les nombreux boutons (Boss, Méga Gemmes,
+       Quêtes...) chacun sur sa propre ligne, et la barre du haut grandissait
+       alors en hauteur au point de manger presque tout l'espace de la
+       fenêtre réduite. Avec nowrap + défilement horizontal, la barre garde
+       toujours sa hauteur d'une seule ligne (52px) : les boutons qui ne
+       tiennent plus sont accessibles en faisant défiler la barre elle-même
+       horizontalement, plutôt que de pousser tout le reste de l'app vers le
+       bas. (Ne s'applique pas au mode compact dédié, qui a sa propre règle
+       body.compact-mode .titlebar plus bas — ce mode-là masque déjà presque
+       tout le reste de l'UI, donc un léger wrap n'y pose pas ce problème.) */
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    overflow-y:hidden;
+    scrollbar-width:thin;
     gap:8px;
     background:linear-gradient(180deg,#173d5a,#0a2133);
     border-bottom:3px solid var(--poke-red);
     padding:0 18px;
+    height:52px;
     min-height:52px;
     box-shadow:0 3px 18px rgba(0,0,0,.35);
     position:sticky;
     top:0;
     z-index:15;
   }
+  .titlebar::-webkit-scrollbar{height:6px;}
+  .titlebar::-webkit-scrollbar-track{background:transparent;}
+  .titlebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px;}
+  .titlebar::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.3);}
   .tab{
     display:flex;
     align-items:center;
@@ -85,7 +105,14 @@
     gap:16px;
     margin-left:auto;
     padding-right:4px;
-    flex-wrap:wrap;
+    /* nowrap + flex-shrink:0 : comme les autres enfants directs de
+       .titlebar (voir .tab / .boss-dropdown-wrap), pour que ce bloc
+       (toujours au premier plan / transparence / réduire) garde sa taille
+       naturelle et rejoigne le défilement horizontal de la barre plutôt
+       que de se faire compresser et wrapper sur plusieurs lignes en
+       interne quand la fenêtre est étroite. */
+    flex-wrap:nowrap;
+    flex-shrink:0;
   }
   .win-controls.hidden{display:none;}
   .win-toggle{
