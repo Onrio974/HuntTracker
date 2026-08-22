@@ -2,33 +2,25 @@
   "name": "compteur-pokemon",
   "productName": "Compteur Pokémon",
   "version": "1.0.0",
-  "desktopName": "compteur-pokemon.desktop",
   "description": "Compteur de rencontres Pokémon (shiny / forme) avec suivi de pity, capture d'écran et OCR.",
-  "author": {
-    "name": "Onrio974",
-    "email": "kekemon974@gmail.com"
-  },
+  "author": "Toi",
   "license": "UNLICENSED",
   "private": true,
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win",
-    "build:win": "electron-builder --win",
     "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux",
-    "build:all": "electron-builder --win --mac --linux",
     "dist": "electron-builder --win",
     "package": "electron-builder --win"
   },
   "devDependencies": {
-    "electron": "^43.4.1",
+    "electron": "^33.0.0",
     "electron-builder": "^26.15.3"
   },
   "build": {
     "appId": "com.tondomaine.compteurpokemon",
     "productName": "Compteur Pokémon",
-    "publish": null,
     "copyright": "Copyright © 2026",
     "asar": true,
     "files": [
@@ -59,41 +51,6 @@
         }
       ]
     },
-    "mac": {
-      "target": [
-        {
-          "target": "dmg",
-          "arch": ["x64", "arm64"]
-        },
-        {
-          "target": "zip",
-          "arch": ["x64", "arm64"]
-        }
-      ],
-      "category": "public.app-category.utilities",
-      "identity": null,
-      "hardenedRuntime": false,
-      "gatekeeperAssess": false
-    },
-    "linux": {
-      "target": [
-        {
-          "target": "AppImage",
-          "arch": ["x64"]
-        },
-        {
-          "target": "deb",
-          "arch": ["x64"]
-        }
-      ],
-      "category": "Utility",
-      "artifactName": "${productName}-${version}-${arch}.${ext}",
-      "syncDesktopName": true,
-      "synopsis": "Compteur de rencontres Pokémon avec OCR"
-    },
-    "dmg": {
-      "artifactName": "CompteurPokemon-${version}-${arch}.${ext}"
-    },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
@@ -106,6 +63,29 @@
     },
     "portable": {
       "artifactName": "CompteurPokemon-Portable-${version}.${ext}"
+    },
+    "mac": {
+      "identity": null,
+      "category": "public.app-category.utilities",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "artifactName": "CompteurPokemon-${version}-${arch}.${ext}"
     }
   }
 }
