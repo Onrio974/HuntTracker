@@ -41,6 +41,12 @@ app.commandLine.appendSwitch('disable-http-cache', 'false');
 let mainWindow = null;
 let pickerWindow = null;
 
+// Reflète l'état "toujours au premier plan" demandé par la page (voir
+// controls:setAlwaysOnTop et le gestionnaire 'blur' dans createWindow, qui
+// réapplique ce flag après chaque perte de focus pour éviter que la
+// fenêtre reste bloquée en arrière-plan sous Windows).
+let alwaysOnTopEnabled = false;
+
 // Mémorise la taille/position "normale" de la fenêtre avant de passer en
 // mode compact, pour pouvoir la restaurer exactement au clic sur "Agrandir".
 let savedNormalBounds = null;
@@ -67,8 +73,16 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
-    minWidth: 1024,
-    minHeight: 700,
+    // minWidth/minHeight étaient fixés à 1024x700, ce qui empêchait de
+    // réduire la fenêtre en dessous de cette taille en tirant simplement
+    // sur ses bords (indépendamment du mode "toujours au premier plan" —
+    // cette limite s'appliquait de toute façon, tout le temps). On
+    // reprend la même taille plancher que le mode compact (voir
+    // COMPACT_WIDTH/COMPACT_HEIGHT et controls:setCompact plus bas) pour
+    // qu'on puisse librement agrandir/réduire la fenêtre par les bords,
+    // sans avoir besoin de passer par le bouton dédié au mode compact.
+    minWidth: COMPACT_WIDTH,
+    minHeight: COMPACT_HEIGHT,
     show: false, // on affiche seulement quand le contenu est prêt (évite le flash blanc)
     backgroundColor: '#071522', // couleur de fond de l'app (évite un flash blanc au démarrage)
     icon: appIcon,
@@ -121,6 +135,37 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+
+  // Sous Windows, une fenêtre "toujours au premier plan" peut se faire
+  // reléguer silencieusement derrière une autre fenêtre elle-même topmost
+  // (typiquement le jeu). Deux moments distincts peuvent déclencher ça :
+  //   - en PERDANT le focus (ex. on reclique dans le jeu) -> 'blur'
+  //   - en REGAGNANT le focus (ex. on clique sur le tracker depuis le jeu,
+  //     cas signalé par l'utilisateur : c'est CE clic précis qui le fait
+  //     passer derrière le jeu et s'y bloquer) -> 'focus'
+  // Dans les deux cas, elle reste ensuite coincée en arrière-plan : seul un
+  // changement de fenêtre (Windows+Tab, ou fermer/rouvrir) la ramenait au
+  // premier plan. On réapplique donc le flag topmost après CHAQUE
+  // changement de focus (perte ET gain) tant que le mode est actif, avec un
+  // court délai pour laisser Windows finir de traiter le changement de
+  // focus déclenché par le clic avant de forcer le recalcul de l'ordre
+  // d'affichage (le forcer de façon parfaitement synchrone, pendant que
+  // Windows traite encore le clic, s'est révélé moins fiable dans des bugs
+  // similaires rapportés sur Electron). Voir aussi le niveau 'screen-saver'
+  // (au lieu de 'floating') dans controls:setAlwaysOnTop ci-dessous, plus
+  // assertif face à une fenêtre de jeu qui se dispute elle aussi le
+  // premier plan.
+  const reassertAlwaysOnTop = () => {
+    setTimeout(() => {
+      if (alwaysOnTopEnabled && mainWindow) {
+        mainWindow.setAlwaysOnTop(false);
+        mainWindow.setAlwaysOnTop(true, 'screen-saver');
+        mainWindow.moveTop();
+      }
+    }, 60);
+  };
+  mainWindow.on('blur', reassertAlwaysOnTop);
+  mainWindow.on('focus', reassertAlwaysOnTop);
 }
 
 // --- Contrôles de fenêtre exposés à la page (toujours au premier plan,
@@ -133,7 +178,11 @@ function createWindow() {
 
 ipcMain.handle('controls:setAlwaysOnTop', (event, flag) => {
   if (!mainWindow) return false;
-  mainWindow.setAlwaysOnTop(!!flag, 'floating');
+  alwaysOnTopEnabled = !!flag;
+  // Niveau 'screen-saver' plutôt que 'floating' : plus assertif face à une
+  // fenêtre de jeu qui se dispute elle aussi le premier plan (voir le
+  // commentaire sur le gestionnaire 'blur' dans createWindow).
+  mainWindow.setAlwaysOnTop(alwaysOnTopEnabled, 'screen-saver');
   return mainWindow.isAlwaysOnTop();
 });
 
@@ -169,7 +218,11 @@ ipcMain.handle('controls:setCompact', (event, flag) => {
     });
     isCompact = true;
   } else {
-    mainWindow.setMinimumSize(1024, 700);
+    // Même taille plancher qu'à la création (voir createWindow) : on ne
+    // réimpose plus l'ancienne limite de 1024x700 en sortant du mode
+    // compact, pour rester cohérent avec le redimensionnement libre par
+    // les bords désormais autorisé en mode normal aussi.
+    mainWindow.setMinimumSize(COMPACT_WIDTH, COMPACT_HEIGHT);
     if (savedNormalBounds) {
       mainWindow.setBounds(savedNormalBounds);
     } else {
