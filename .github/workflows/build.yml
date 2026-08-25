@@ -1,12 +1,13 @@
 name: Build App
 
-# - push / workflow_dispatch : build rapide de test (Windows + Mac), artifacts
-#   téléchargeables depuis l'onglet Actions.
+# - push / workflow_dispatch : build rapide de test (Windows + Mac + Linux),
+#   artifacts téléchargeables depuis l'onglet Actions.
 # - release (published) : quand tu publies une Release GitHub (bouton
 #   "Draft a new release" dans la colonne de droite du repo, tag comme
-#   v1.0.0, puis "Publish release"), les deux jobs ci-dessous tournent et
-#   attachent en plus l'installeur .exe ET le .dmg construits directement
-#   sur cette Release, comme une vraie version publiée du logiciel.
+#   v1.0.0, puis "Publish release"), les trois jobs ci-dessous tournent et
+#   attachent en plus l'installeur .exe, le .dmg ET le .deb/.AppImage
+#   construits directement sur cette Release, comme une vraie version
+#   publiée du logiciel.
 on:
   push: {}
   workflow_dispatch: {}
@@ -97,3 +98,37 @@ jobs:
           files: |
             dist/*.dmg
             dist/*.zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Build Linux app (AppImage + deb)
+        run: npm run build:linux
+
+      - name: Upload build artifacts (onglet Actions)
+        uses: actions/upload-artifact@v4
+        with:
+          name: HuntTracker-linux
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+          if-no-files-found: error
+
+      - name: Attach installer(s) to the GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.AppImage
+            dist/*.deb
