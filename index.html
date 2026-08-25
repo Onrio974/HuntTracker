@@ -6086,6 +6086,20 @@ function initDropdownAutoPosition(){
   // les différentes fonctions setupXDropdown / setupLangDropdown) ; on
   // observe donc les changements de classe pour repositionner le panneau
   // juste après, sans avoir à modifier chacun de ces gestionnaires.
+  //
+  // IMPORTANT : on observe document.body avec subtree:true, PAS chaque
+  // .boss-dropdown-wrap individuellement. Les menus Membership/Transit
+  // Pass/Safari vivent dans #mainArea, dont le contenu est régénéré par
+  // main.innerHTML = ... à chaque appel de render() (utilisé 80+ fois dans
+  // ce fichier, à chaque changement d'état) : ça détruit les anciens noeuds
+  // .boss-dropdown-wrap et en recrée de nouveaux. Un observer attaché aux
+  // wraps d'origine (via observer.observe(wrap,...) sur chaque élément
+  // trouvé au chargement) perdait donc le suivi de ces 3 menus dès le
+  // premier render() suivant : leurs panneaux gardaient alors la position
+  // par défaut du CSS (position:fixed;top:0;left:0), d'où le bug "menu qui
+  // apparaît en haut à gauche, derrière la barre". Observer document.body
+  // en profondeur couvre aussi les wraps recréés après coup, sans avoir à
+  // ré-attacher quoi que ce soit après chaque render().
   const observer = new MutationObserver((mutations)=>{
     mutations.forEach(m=>{
       const wrap = m.target;
@@ -6094,9 +6108,7 @@ function initDropdownAutoPosition(){
       }
     });
   });
-  document.querySelectorAll('.boss-dropdown-wrap').forEach(wrap=>{
-    observer.observe(wrap, { attributes:true, attributeFilter:['class'] });
-  });
+  observer.observe(document.body, { attributes:true, attributeFilter:['class'], subtree:true });
   // Un redimensionnement de la fenêtre peut faire déborder un panneau déjà
   // ouvert (ou au contraire lui permettre de reprendre sa position par
   // défaut) : on recalcule dans ce cas.
