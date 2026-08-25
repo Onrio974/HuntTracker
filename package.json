@@ -1,9 +1,13 @@
 {
   "name": "compteur-pokemon",
   "productName": "Compteur Pokémon",
+  "desktopName": "compteur-pokemon.desktop",
   "version": "1.0.0",
   "description": "Compteur de rencontres Pokémon (shiny / forme) avec suivi de pity, capture d'écran et OCR.",
-  "author": "Toi",
+  "author": {
+    "name": "Toi",
+    "email": "kekemon974@gmail.com"
+  },
   "license": "UNLICENSED",
   "private": true,
   "main": "main.js",
