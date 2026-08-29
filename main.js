@@ -84,6 +84,22 @@ let alwaysOnTopEnabled = false;
 // pourquoi (les gestionnaires 'blur'/'focus' seuls ne suffisent pas).
 let alwaysOnTopWatchdog = null;
 
+// Vrai tant qu'un <select> HTML natif de la page a le focus (donc
+// potentiellement ouvert) — voir controls:setSelectOpen plus bas, appelé
+// par index.html sur les évènements focus/blur de tout <select>. Sert à
+// mettre en pause, le temps que le <select> soit ouvert, le comportement
+// "toujours au premier plan" ci-dessous (moveTop()/setAlwaysOnTop répétés
+// par reassertAlwaysOnTop et startAlwaysOnTopWatchdog) : la liste déroulante
+// d'un <select> natif est une fenêtre popup séparée au niveau du système
+// d'exploitation, distincte de notre BrowserWindow. Si on force notre
+// fenêtre principale au premier plan (moveTop/setAlwaysOnTop) PENDANT que
+// cette popup est ouverte, elle lui vole l'activation — ce qui, sous
+// Windows, ferme instantanément la popup du <select> (signalé par un
+// utilisateur : les menus déroulants "Forme / événement" et du graphique
+// de convergence se refermaient dès l'ouverture quand "toujours au premier
+// plan" était actif). D'où cette pause pendant que nativeSelectOpen est vrai.
+let nativeSelectOpen = false;
+
 // Mémorise la taille/position "normale" de la fenêtre avant de passer en
 // mode compact, pour pouvoir la restaurer exactement au clic sur "Agrandir".
 let savedNormalBounds = null;
@@ -194,7 +210,7 @@ function createWindow() {
   // premier plan.
   const reassertAlwaysOnTop = () => {
     setTimeout(() => {
-      if (alwaysOnTopEnabled && mainWindow) {
+      if (alwaysOnTopEnabled && mainWindow && !nativeSelectOpen) {
         mainWindow.setAlwaysOnTop(false);
         mainWindow.setAlwaysOnTop(true, 'screen-saver');
         mainWindow.moveTop();
@@ -224,7 +240,7 @@ function createWindow() {
 function startAlwaysOnTopWatchdog() {
   if (alwaysOnTopWatchdog) return;
   alwaysOnTopWatchdog = setInterval(() => {
-    if (!alwaysOnTopEnabled || !mainWindow || mainWindow.isDestroyed()) return;
+    if (!alwaysOnTopEnabled || !mainWindow || mainWindow.isDestroyed() || nativeSelectOpen) return;
     if (!mainWindow.isAlwaysOnTop()) {
       mainWindow.setAlwaysOnTop(true, 'screen-saver');
     }
@@ -286,6 +302,15 @@ ipcMain.handle('controls:setAlwaysOnTop', (event, flag) => {
   }
 
   return mainWindow.isAlwaysOnTop();
+});
+
+// Voir la déclaration de nativeSelectOpen plus haut : index.html appelle
+// ceci sur chaque focus/blur d'un <select> natif de la page, pour mettre
+// en pause le "toujours au premier plan" agressif le temps que la liste
+// déroulante soit potentiellement ouverte.
+ipcMain.handle('controls:setSelectOpen', (event, flag) => {
+  nativeSelectOpen = !!flag;
+  return nativeSelectOpen;
 });
 
 ipcMain.handle('controls:setOpacity', (event, value) => {
