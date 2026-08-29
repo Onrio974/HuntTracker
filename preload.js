@@ -30,5 +30,10 @@ contextBridge.exposeInMainWorld('windowControls', {
   setAlwaysOnTop: (flag) => ipcRenderer.invoke('controls:setAlwaysOnTop', flag),
   setOpacity: (value) => ipcRenderer.invoke('controls:setOpacity', value),
   setCompact: (flag) => ipcRenderer.invoke('controls:setCompact', flag),
-  setLanguage: (lang) => ipcRenderer.invoke('controls:setLanguage', lang)
+  setLanguage: (lang) => ipcRenderer.invoke('controls:setLanguage', lang),
+  // Voir main.js (nativeSelectOpen) : signale qu'un <select> natif de la
+  // page vient de prendre/perdre le focus, pour mettre en pause le
+  // "toujours au premier plan" agressif le temps que sa liste déroulante
+  // soit potentiellement ouverte (sinon elle se referme instantanément).
+  setSelectOpen: (flag) => ipcRenderer.invoke('controls:setSelectOpen', flag)
 });
