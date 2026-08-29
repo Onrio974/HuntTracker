@@ -5885,6 +5885,30 @@ function setupWindowControls(){
     savePrefs();
   });
 
+  // --- Pause du "toujours au premier plan" pendant qu'un <select> natif
+  // est ouvert (voir nativeSelectOpen dans main.js) : sinon, tant que
+  // "toujours au premier plan" est actif, les listes déroulantes natives
+  // (ex: "Forme / événement" dans la colonne de gauche, le sélecteur du
+  // graphique de convergence) se refermaient instantanément dès l'ouverture
+  // — main.js force régulièrement notre fenêtre au premier plan
+  // (moveTop()/setAlwaysOnTop), ce qui vole l'activation à la popup du
+  // <select> (une fenêtre système séparée) et la ferme aussitôt sous
+  // Windows. Un navigateur ne notifie pas explicitement l'ouverture/
+  // fermeture d'un <select>, donc on approxime avec focus/blur (délégués
+  // sur document, pour couvrir aussi les <select> recréés par render()) :
+  // le <select> a le focus pendant toute la durée où sa liste peut être
+  // ouverte, et le perd à la sélection d'une option ou à la fermeture.
+  document.addEventListener('focusin', (e) => {
+    if (e.target && e.target.tagName === 'SELECT') {
+      try { window.windowControls.setSelectOpen(true); } catch(err){}
+    }
+  });
+  document.addEventListener('focusout', (e) => {
+    if (e.target && e.target.tagName === 'SELECT') {
+      try { window.windowControls.setSelectOpen(false); } catch(err){}
+    }
+  });
+
   // --- Transparence ---
   opacitySlider.value = prefs.opacity;
   window.windowControls.setOpacity(prefs.opacity / 100);
