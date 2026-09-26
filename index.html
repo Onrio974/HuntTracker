@@ -45,37 +45,17 @@
   .titlebar{
     display:flex;
     align-items:center;
-    /* flex-wrap:nowrap + overflow-x:auto plutôt que flex-wrap:wrap : avec
-       wrap, rétrécir la fenêtre (désormais possible bien plus bas, voir
-       main.js) faisait passer les nombreux boutons (Boss, Méga Gemmes,
-       Quêtes...) chacun sur sa propre ligne, et la barre du haut grandissait
-       alors en hauteur au point de manger presque tout l'espace de la
-       fenêtre réduite. Avec nowrap + défilement horizontal, la barre garde
-       toujours sa hauteur d'une seule ligne (52px) : les boutons qui ne
-       tiennent plus sont accessibles en faisant défiler la barre elle-même
-       horizontalement, plutôt que de pousser tout le reste de l'app vers le
-       bas. (Ne s'applique pas au mode compact dédié, qui a sa propre règle
-       body.compact-mode .titlebar plus bas — ce mode-là masque déjà presque
-       tout le reste de l'UI, donc un léger wrap n'y pose pas ce problème.) */
-    flex-wrap:nowrap;
-    overflow-x:auto;
-    overflow-y:hidden;
-    scrollbar-width:thin;
+    flex-wrap:wrap;
     gap:8px;
     background:linear-gradient(180deg,#173d5a,#0a2133);
     border-bottom:3px solid var(--poke-red);
     padding:0 18px;
-    height:52px;
     min-height:52px;
     box-shadow:0 3px 18px rgba(0,0,0,.35);
     position:sticky;
     top:0;
     z-index:15;
   }
-  .titlebar::-webkit-scrollbar{height:6px;}
-  .titlebar::-webkit-scrollbar-track{background:transparent;}
-  .titlebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px;}
-  .titlebar::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.3);}
   .tab{
     display:flex;
     align-items:center;
@@ -105,14 +85,7 @@
     gap:16px;
     margin-left:auto;
     padding-right:4px;
-    /* nowrap + flex-shrink:0 : comme les autres enfants directs de
-       .titlebar (voir .tab / .boss-dropdown-wrap), pour que ce bloc
-       (toujours au premier plan / transparence / réduire) garde sa taille
-       naturelle et rejoigne le défilement horizontal de la barre plutôt
-       que de se faire compresser et wrapper sur plusieurs lignes en
-       interne quand la fenêtre est étroite. */
-    flex-wrap:nowrap;
-    flex-shrink:0;
+    flex-wrap:wrap;
   }
   .win-controls.hidden{display:none;}
   .win-toggle{
@@ -173,25 +146,12 @@
     border-radius:999px;padding:1px 7px;line-height:1.5;
   }
   .boss-dropdown-panel{
-    /* position:fixed (et non absolute) : .titlebar (l'ancêtre direct de ces
-       panneaux via .boss-dropdown-wrap) a overflow-y:hidden pour empêcher la
-       barre de grandir en hauteur quand ses boutons débordent (voir le
-       commentaire sur .titlebar plus haut) — mais un enfant en
-       position:absolute reste soumis au clip d'overflow de son ancêtre,
-       QUELLE QUE SOIT sa valeur de z-index : le panneau se retrouvait donc
-       invisible/coupé dès qu'il dépassait la hauteur de 52px de la barre,
-       ce qui pouvait ressembler à "le menu apparaît derrière" le reste de
-       la page. position:fixed sort le panneau de ce flux de clipping (il se
-       positionne par rapport à la fenêtre, pas à un ancêtre) ; sa position
-       exacte (top/left) est alors calculée en JS juste avant son ouverture,
-       voir repositionDropdownPanel().
-    */
-    display:none;position:fixed;top:0;left:0;
+    display:none;position:absolute;top:calc(100% + 8px);left:0;
     width:360px;max-height:70vh;
     background:linear-gradient(180deg,#0e2a40,#081b2b);
     border:1px solid var(--border);border-radius:12px;
     box-shadow:0 14px 34px rgba(0,0,0,.5);
-    z-index:400;overflow:hidden;flex-direction:column;
+    z-index:40;overflow:hidden;flex-direction:column;
   }
   .boss-dropdown-wrap.open .boss-dropdown-panel{display:flex;}
   .boss-panel-header{padding:10px;border-bottom:1px solid #1f4a67;flex-shrink:0;}
@@ -854,22 +814,10 @@
     box-shadow:0 8px 24px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.04);
   }
   .capture-panel .title{color:var(--poke-yellow)!important;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px;font-weight:800;}
-  .capture-stage{position:relative;background:#000;border-radius:10px!important;overflow:auto;max-width:100%;max-height:260px;display:none;border:2px solid #2d718f!important;box-shadow:0 8px 24px rgba(0,0,0,.3);}
+  .capture-stage{position:relative;background:#000;border-radius:10px!important;overflow:hidden;max-width:100%;display:none;border:2px solid #2d718f!important;box-shadow:0 8px 24px rgba(0,0,0,.3);}
   .capture-stage.on{display:block;}
-  /* .capture-canvas-wrap : boîte interne, en flux normal, qui contient la
-     vidéo + l'overlay de sélection. C'est ELLE qu'on élargit pour zoomer
-     (via captureZoomLevel, voir setupCaptureZoom) — le zoom n'est PAS un
-     transform CSS (qui désynchroniserait la résolution du canvas de sa
-     taille affichée), juste une largeur réelle plus grande. .capture-stage,
-     qui l'englobe, reste à taille fixe avec overflow:auto : au-delà de
-     100%, elle devient scrollable pour naviguer jusqu'à la zone voulue. */
-  .capture-canvas-wrap{position:relative;width:100%;}
   .capture-stage video{display:block;width:100%;max-height:260px;object-fit:contain;background:#000;}
   .capture-stage canvas.overlay{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;}
-  .zoom-row{display:flex;align-items:center;gap:7px;margin-left:8px;}
-  .zoom-row .zoom-label{font-size:12px;opacity:.75;}
-  .zoom-row input[type="range"]{width:90px;}
-  .zoom-row .zoom-value{font-size:10.5px;color:var(--text-dim);min-width:34px;}
   .capture-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;align-items:center;}
   .capture-hint{color:var(--text-dim);font-size:11px;margin-top:8px;line-height:1.5;}
   .capture-hint .k{color:var(--func);}
@@ -979,18 +927,9 @@
     image-rendering: pixelated;
   }
 
-  .ocr-result{margin-top:10px;padding:9px 10px;border:1px solid #2d718f!important;background:#081d2c!important;border-radius:10px!important;font-size:11px;line-height:1.5;height:64px;overflow:hidden;}
-  .ocr-result .detected{color:var(--type);font-weight:600;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;}
-  .ocr-result .raw{color:var(--text-dim);word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-  /* #captureStatus : hauteur figee car son texte (statut OCR brut, longueur
-     variable) est mis a jour tres frequemment par scanEncounterCanvas() EN
-     DEHORS de render() (a chaque cycle de detection automatique, pas
-     seulement a chaque rencontre) — sans hauteur fixe, chaque changement de
-     longueur de texte fait varier la hauteur de ce bloc et decale tout ce qui
-     est en dessous, ce qui donnait l'impression que la fenetre "sautait" en
-     continu pendant que la detection auto tournait (par-dessus le saut,
-     desormais corrige, lie a la reconstruction du <video> a chaque render()). */
-  #captureStatus{min-height:33px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .ocr-result{margin-top:10px;padding:9px 10px;border:1px solid #2d718f!important;background:#081d2c!important;border-radius:10px!important;font-size:11px;line-height:1.5;}
+  .ocr-result .detected{color:var(--type);font-weight:600;}
+  .ocr-result .raw{color:var(--text-dim);word-break:break-word;}
   .ocr-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
   .target-badge{font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid var(--poke-yellow)!important;color:var(--poke-yellow)!important;background:rgba(255,212,71,.07);margin-left:6px;}
   .pity-card{background:linear-gradient(145deg,rgba(37,68,77,.7),rgba(11,38,51,.9))!important;border:1px solid #4d7d7b!important;border-radius:14px!important;padding:10px 12px;margin-top:10px;}
@@ -1112,7 +1051,7 @@
     </button>
     <div class="boss-dropdown-panel" id="bossDropdownPanel">
       <div class="boss-panel-header">
-        <input type="text" id="bossSearchInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Rechercher un boss...">
+        <input type="text" id="bossSearchInput" placeholder="Rechercher un boss...">
       </div>
       <div class="boss-panel-list" id="bossPanelList"></div>
       <div class="boss-panel-footer">Coche un boss juste après l'avoir combattu : le cooldown se calcule automatiquement et la case se décoche seule quand il redevient dispo.</div>
@@ -1125,7 +1064,7 @@
     </button>
     <div class="boss-dropdown-panel" id="megaDropdownPanel">
       <div class="boss-panel-header">
-        <input type="text" id="megaSearchInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Rechercher une méga gemme...">
+        <input type="text" id="megaSearchInput" placeholder="Rechercher une méga gemme...">
       </div>
       <div class="boss-panel-list" id="megaPanelList"></div>
       <div class="boss-panel-footer">Coche une méga gemme une fois sa quête terminée. Clique sur son nom pour ouvrir la page de la quête (PRO Wiki) dans un nouvel onglet.</div>
@@ -1138,7 +1077,7 @@
     </button>
     <div class="boss-dropdown-panel" id="questDropdownPanel">
       <div class="boss-panel-header">
-        <input type="text" id="questSearchInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Rechercher une quête...">
+        <input type="text" id="questSearchInput" placeholder="Rechercher une quête...">
       </div>
       <div class="boss-panel-list" id="questPanelList"></div>
       <div class="boss-panel-footer">Coche une quête une fois terminée. Clique sur son nom pour ouvrir la page de la quête (PRO Wiki) dans un nouvel onglet.</div>
@@ -1151,7 +1090,7 @@
     </button>
     <div class="boss-dropdown-panel" id="excavationDropdownPanel">
       <div class="boss-panel-header">
-        <input type="text" id="excavationSearchInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Rechercher un site...">
+        <input type="text" id="excavationSearchInput" placeholder="Rechercher un site...">
       </div>
       <div class="boss-panel-list" id="excavationPanelList"></div>
       <div class="boss-panel-footer">Coche un site juste après l'avoir excavé (rochers cassés) : un cooldown de 20h se lance et la case se décoche seule quand le site redevient dispo.</div>
@@ -1164,7 +1103,7 @@
     </button>
     <div class="boss-dropdown-panel" id="dailyQuestDropdownPanel">
       <div class="boss-panel-header">
-        <input type="text" id="dailyQuestSearchInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Rechercher une daily...">
+        <input type="text" id="dailyQuestSearchInput" placeholder="Rechercher une daily...">
       </div>
       <div class="boss-panel-list" id="dailyQuestPanelList"></div>
       <div class="boss-panel-footer">Coche une daily une fois faite : elle se décoche seule au reset du serveur, minuit GMT+0 — 02h00 en France (heure d'été).</div>
@@ -1216,7 +1155,7 @@
     </div>
     <div class="stats-bottom">
     <div class="grand-total-box">
-      <div class="label">Shiny</div>
+      <div class="label">shiny</div>
       <div class="value" id="shinyTotalValue">0</div>
       <div class="sub">trouvés · <span id="shinyEncSub" style="color:var(--number);">0 depuis le dernier</span></div>
       <div class="sub" id="shinyPitySub">min — · max —</div>
@@ -1229,7 +1168,7 @@
     </div>
     <div class="grand-total-box">
       <div class="label" style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
-        <span>Form Alternative</span>
+        <span>form alternative</span>
         <select id="formShapeSelect" title="Forme / événement" style="font-size:10.5px;padding:2px 4px;max-width:110px;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:5px;">
           <option value="Summer">Summer</option>
           <option value="Halloween">Halloween</option>
@@ -1239,12 +1178,15 @@
           <option value="Pinkan">Pinkan</option>
         </select>
       </div>
+      <label class="win-toggle" title="Décochez quand aucun événement forme alternative n'est en cours : le compteur arrêtera d'augmenter à chaque rencontre." style="margin:2px 0 4px;font-size:10.5px;">
+        <input type="checkbox" id="formEventActiveToggle">
+        Événement en cours
+      </label>
       <div class="value" id="formTotalValue">0</div>
       <div class="sub">trouvées · <span id="formEncSub" style="color:var(--number);">0 depuis la dernière</span></div>
       <div class="sub" id="formPitySub">min — · max —</div>
       <div class="sub" id="formLastSub">dernier : —</div>
       <div class="sub" id="formRateSub">taux — · moyenne —</div>
-      <div class="sub" id="formShapeTotalSub" title="Rencontres comptées toutes chasses confondues pendant que cette catégorie était sélectionnée — référence commune pour la convergence des Pokémon jamais trouvés dans cette Forme.">Total Summer : 0</div>
       <div style="display:flex;gap:6px;margin-top:7px;">
         <button class="act danger-outline" id="formMinusBtn" style="font-size:11px;padding:5px 8px;flex:1;">-1</button>
         <button class="act" id="formUndoBtn" title="Retour en arrière" style="font-size:11px;padding:5px 8px;flex:0 0 34px;">↩</button>
@@ -1296,7 +1238,6 @@
         <div class="iv-empty">Colle une capture pour lancer l'analyse.</div>
       </div>
       <div id="ivTotalBoxWrap"></div>
-      <div id="ivHiddenPowerWrap"></div>
       <div id="ivConfidenceWrap"></div>
       <div class="iv-btn-row" id="ivSaveRow" style="display:none;">
         <button class="act primary" id="ivSaveBtn" style="font-size:11px;padding:7px 9px;">💾 Enregistrer dans l'historique</button>
@@ -1317,19 +1258,6 @@
 <div id="toast" class="toast"></div>
 
 <script>
-// Filet de sécurité global : logue toute erreur JS ou promesse rejetée non
-// interceptée ailleurs dans le code, plutôt que de laisser l'appli silencieuse
-// et potentiellement figée sans aucune trace exploitable. N'empêche pas
-// l'erreur d'exister (les protections spécifiques comme le try/catch de
-// render() restent la vraie ligne de défense), mais garantit qu'on a au
-// moins un log dans la console pour diagnostiquer un futur cas comme celui-ci.
-window.addEventListener('error', (e) => {
-  console.error('Erreur JS non interceptée :', e.error || e.message, e.filename ? `(${e.filename}:${e.lineno})` : '');
-});
-window.addEventListener('unhandledrejection', (e) => {
-  console.error('Promesse rejetée non interceptée :', e.reason);
-});
-
 const STORAGE_KEY = 'pokemon-hunt-data';
 // Formes/événements disponibles pour le tracker "form alternative" et leur
 // dénominateur de probabilité (1/denom). Pinkan a un taux different des autres.
@@ -1355,12 +1283,8 @@ const FORM_SHAPE_ABBR = { Summer:'Su', Halloween:'Ha', Xmas:'Xm', Easter:'Ea', V
 let state = { grandTotal: 0, activeHuntId: null, activePokemonId: null, hunts: [], collapsedRegions: {},
   shinyTracker: { total:0, pityCurrent:0, pityMin:0, pityMax:0, pityLast:0, pityHits:0 },
   formTracker: { total:0, pityCurrent:0, pityMin:0, pityMax:0, pityLast:0, pityHits:0 },
-  // Total de rencontres, TOUTES chasses confondues, comptabilisées pendant que
-  // chaque catégorie de forme (Summer/Halloween/...) était sélectionnée. Sert
-  // de référence commune pour la convergence "forme" de tous les Pokémon
-  // jamais trouvés (ni gelés) dans cette forme — voir bumpGlobalPity().
-  formShapeTotals: {},
   formShape: 'Summer',
+  formEventActive: true,
   ivHistory: [],
   bossCooldowns: {},
   megaStones: {},
@@ -1991,7 +1915,7 @@ function getRecommendedSetDetailsHtml(name, stats, abilities){
 
   let sourceNote = '';
   if(isPreEvolutionFallback){
-    sourceNote = `<span style="display:block;opacity:.62;margin-top:2px;">Talent/nature basé sur le set compétitif de ${escapeHtml(displayNatureFormName(PRE_EVOLUTION_FINAL_FORM[key]))} ; vérifie le talent propre à cette Forme si elle possède un set LC/NFE spécifique.</span>`;
+    sourceNote = `<span style="display:block;opacity:.62;margin-top:2px;">Talent/nature basé sur le set compétitif de ${escapeHtml(displayNatureFormName(PRE_EVOLUTION_FINAL_FORM[key]))} ; vérifie le talent propre à cette forme si elle possède un set LC/NFE spécifique.</span>`;
   } else if(isEstimated){
     // Pas de set Smogon documenté pour ce Pokémon : le talent affiché est
     // un vrai talent possible de ce Pokémon (via PokeAPI), mais
@@ -2068,28 +1992,9 @@ function getBestMatchingPokemonName(detectedName, threshold = 0.75) {
   return null;
 }
 
-// Petit utilitaire partagé : comme fetch() natif n'a pas de délai maximum
-// par défaut, une requête vers PokeAPI qui ne répond jamais (réseau filtré,
-// DNS qui traîne, portail captif, etc. — observé chez un utilisateur sous
-// Linux) restait auparavant "en attente" indéfiniment. Comme certaines de
-// ces requêtes étaient "await"ées en plein milieu du chargement initial ou
-// de render(), l'appli entière restait figée sur un écran vide pour
-// toujours, sans aucune erreur ni message. On borne maintenant chaque
-// requête réseau à un délai raisonnable : passé ce délai, on abandonne
-// proprement (comme un échec normal) plutôt que de bloquer l'affichage.
-async function fetchWithTimeout(url, ms = 8000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ms);
-  try {
-    return await fetch(url, { signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 async function loadGlobalPokemonDatabase() {
   try {
-    const response = await fetchWithTimeout(POKEAPI_LIST_URL);
+    const response = await fetch(POKEAPI_LIST_URL);
     const data = await response.json();
     globalPokemonDatabase = data.results.map((p) => {
       const match = p.url.match(/\/pokemon\/(\d+)\/?$/);
@@ -2108,7 +2013,7 @@ async function loadGlobalPokemonDatabase() {
 async function fetchCaptureRate(nameOrId) {
   try {
     const cleanName = String(nameOrId).toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
-    const res = await fetchWithTimeout(`https://pokeapi.co/api/v2/pokemon-species/${cleanName}`);
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${cleanName}`);
     if (!res.ok) return null;
     const data = await res.json();
     return typeof data.capture_rate === 'number' ? data.capture_rate : null;
@@ -2147,7 +2052,7 @@ async function fetchPokemonTypes(nameOrId) {
     const found = globalPokemonDatabase.find(p => p.name === cleanName || p.id === nameOrId);
     if (found && found.types && found.types.length > 0) return found.types;
 
-    const res = await fetchWithTimeout(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
     if (!res.ok) return ['normal'];
     const data = await res.json();
     const types = data.types.map(t => t.type.name);
@@ -2197,7 +2102,7 @@ async function fetchPokemonStats(nameOrId) {
     const found = globalPokemonDatabase.find(p => p.name === cleanName || p.id === nameOrId);
     if (found && found.stats) return found.stats;
 
-    const res = await fetchWithTimeout(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
     if (!res.ok) return null;
     const data = await res.json();
     const byKey = {};
@@ -2228,7 +2133,7 @@ async function fetchPokemonAbilities(nameOrId) {
     const found = globalPokemonDatabase.find(p => p.name === cleanName || p.id === nameOrId);
     if (found && found.abilities) return found.abilities;
 
-    const res = await fetchWithTimeout(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
     if (!res.ok) return null;
     const data = await res.json();
     const abilities = (data.abilities || [])
@@ -2238,69 +2143,6 @@ async function fetchPokemonAbilities(nameOrId) {
     return abilities;
   } catch (err) {
     return null;
-  }
-}
-
-// Enrichissement en arrière-plan des données PokeAPI (types, taux de
-// capture, stats, talents) d'un Pokémon nouvellement ajouté (ex: détecté
-// par l'OCR) et pas encore complet. C'était auparavant fait en plein milieu
-// de render(), en "await"ant chaque requête l'une après l'autre pour
-// CHAQUE Pokémon incomplet de la chasse — sur un réseau lent, hors-ligne,
-// ou filtré (rapporté par un utilisateur sous Linux dont l'appli s'est
-// figée sur un écran vide en croisant un Growlithe), ça bloquait
-// l'affichage entier, parfois indéfiniment. Ici, render() n'attend plus
-// rien : il affiche immédiatement ce qui est déjà en cache (avec des
-// valeurs de repli du genre "—" pour le reste, déjà gérées ailleurs dans
-// le code), pendant que l'enrichissement se fait de son côté et déclenche
-// un nouveau render() une fois terminé.
-const pokemonEnrichState = {}; // id du pokémon -> { inFlight, failedAt }
-const ENRICH_RETRY_COOLDOWN_MS = 60000; // pas de nouvelle tentative avant 1 min après un échec
-
-function pokemonNeedsEnrichment(x){
-  return (!x.types || x.types.length === 0) ||
-         (x.captureRate === null || x.captureRate === undefined) ||
-         !x.natureStats || !x.natureAbilities;
-}
-
-function enrichPokemonDataInBackground(h){
-  if (!h) return;
-  for (const x of h.pokemon) {
-    if (!pokemonNeedsEnrichment(x)) continue;
-    const st = pokemonEnrichState[x.id] || (pokemonEnrichState[x.id] = { inFlight: false, failedAt: null });
-    if (st.inFlight) continue;
-    if (st.failedAt && (Date.now() - st.failedAt) < ENRICH_RETRY_COOLDOWN_MS) continue;
-    st.inFlight = true;
-    (async () => {
-      let anyFailure = false;
-      try {
-        if (!x.types || x.types.length === 0) {
-          const types = await fetchPokemonTypes(x.name);
-          if (types && types.length) x.types = types; else anyFailure = true;
-        }
-        if (x.captureRate === null || x.captureRate === undefined) {
-          const rate = await fetchCaptureRate(x.name);
-          if (rate !== null && rate !== undefined) x.captureRate = rate; else anyFailure = true;
-        }
-        if (!x.natureStats) {
-          const stats = await fetchPokemonStats(x.name);
-          if (stats) x.natureStats = stats; else anyFailure = true;
-        }
-        if (!x.natureAbilities) {
-          const abilities = await fetchPokemonAbilities(x.name);
-          if (abilities) x.natureAbilities = abilities; else anyFailure = true;
-        }
-      } catch (err) {
-        anyFailure = true;
-      } finally {
-        st.inFlight = false;
-        st.failedAt = anyFailure ? Date.now() : null;
-        saveState();
-        // On ne relance l'affichage que si ce Pokémon existe toujours quelque
-        // part dans les chasses (il a pu être supprimé pendant l'attente).
-        const stillRelevant = state.hunts.some(hh => hh.pokemon.some(p => p.id === x.id));
-        if (stillRelevant) render();
-      }
-    })();
   }
 }
 
@@ -2360,13 +2202,6 @@ let detectTimer = null;
 let region = null;
 let selecting = false;
 let selStart = null;
-// Niveau de zoom (1 = 100%) de l'aperçu de partage d'écran, pour permettre
-// d'encadrer plus précisément une petite zone (ex. la ligne de combat) sur
-// une fenêtre de jeu qui occupe autrement une toute petite portion de
-// l'aperçu réduit. Volontairement NON persisté (redémarre à 1 à chaque
-// rendu de l'app) : c'est un réglage de confort ponctuel, pas une donnée de
-// chasse. Voir setupCaptureZoom() / sizeOverlay().
-let captureZoomLevel = 1;
 let baselineHash = null;
 let cooldownUntil = 0;
 let pendingChangeSince = 0;
@@ -2433,6 +2268,9 @@ function normalizeState(){
   state.shinyTracker = normTracker(state.shinyTracker);
 
   state.formShape = FORM_SHAPES.includes(state.formShape) ? state.formShape : 'Summer';
+  // Par defaut actif, pour ne rien changer au comportement existant tant que
+  // l'utilisateur n'a pas explicitement decoche la case (aucun evenement en cours).
+  state.formEventActive = state.formEventActive !== false;
 
   // Migration : si "formTrackers" (multi-forme) n'existe pas encore, on vient
   // de l'ancien systeme mono-forme -> on rapatrie les donnees existantes (qui
@@ -2523,18 +2361,7 @@ function normalizeState(){
       pityHits: Number(p.pityHits) || 0,
       collapsed: !!p.collapsed,
       captureRate: typeof p.captureRate === 'number' ? p.captureRate : null,
-      availableForms: normalizeAvailableForms(p.availableForms),
-      // --- Pity GLOBAL (toutes chasses confondues) ---
-      // formPity[shape] : rencontres comptées depuis le dernier reset DE CE
-      // POKÉMON dans cette forme, incrémenté pour TOUS les Pokémon de TOUTES
-      // les chasses en même temps (voir bumpGlobalPity), gelé seulement si sa
-      // case "shape" est décochée. Remplace l'ancien h.formCycles[shape].pokemonPity
-      // (scopé par chasse) — voir migrateToGlobalPity().
-      formPity: (p.formPity && typeof p.formPity === 'object') ? p.formPity : {},
-      // shinyResetAt : valeur de state.grandTotal au moment où CE Pokémon a été
-      // trouvé shiny (0 si jamais trouvé). Le pity shiny se calcule à la volée :
-      // state.grandTotal - shinyResetAt (pas de gel possible pour le shiny).
-      shinyResetAt: Number.isFinite(Number(p.shinyResetAt)) ? Number(p.shinyResetAt) : 0
+      availableForms: normalizeAvailableForms(p.availableForms)
     }));
 
     if(h.total === 0 && h.pokemon.length) h.total = h.pokemon.reduce((n,p)=>n+p.total,0);
@@ -2595,11 +2422,6 @@ function normalizeState(){
     });
   });
 
-  if(!state.formShapeTotals || typeof state.formShapeTotals !== 'object') state.formShapeTotals = {};
-  FORM_SHAPES.forEach(shape=>{ if(!Number.isFinite(Number(state.formShapeTotals[shape]))) state.formShapeTotals[shape] = 0; });
-
-  migrateToGlobalPity();
-
   if(!state.bossCooldowns || typeof state.bossCooldowns !== 'object') state.bossCooldowns = {};
   if(!state.megaStones || typeof state.megaStones !== 'object') state.megaStones = {};
   if(!state.quests || typeof state.quests !== 'object') state.quests = {};
@@ -2619,87 +2441,6 @@ function normalizeState(){
   if(!h || !h.pokemon.some(p=>p.id===state.activePokemonId)){
     state.activePokemonId = h && h.pokemon.length ? h.pokemon[0].id : null;
   }
-}
-
-// Migration one-shot (ancien système "pity par chasse" -> "pity global, toutes
-// chasses confondues"). Tourne à chaque normalizeState() mais ne fait le
-// travail qu'une seule fois par sauvegarde, grâce à state._migratedGlobalPity.
-//
-// Principe :
-// - SHINY : plus besoin de compteur stocké — il se calcule à la volée avec
-//   state.grandTotal - p.shinyResetAt (voir render()). On initialise juste
-//   shinyResetAt à partir de l'ancien h.shinyCycle.pokemonPity si un shiny a
-//   déjà été trouvé un jour (state.shinyTracker.total > 0), sinon 0 pour tout
-//   le monde (personne n'a encore trouvé de shiny).
-// - FORME (par catégorie, Summer/Halloween/...) : reste un compteur stocké
-//   par Pokémon (p.formPity[shape]) à cause du gel par case décochée, mais
-//   n'est plus scopé par chasse : bumpGlobalPity() l'incrémente maintenant
-//   pour TOUS les Pokémon de TOUTES les chasses. Le total de référence
-//   state.formShapeTotals[shape] est démarré à grandTotal si aucune autre
-//   catégorie n'a jamais eu de données (cas le plus courant : une seule
-//   catégorie utilisée depuis le début, donc "toutes les rencontres ont eu
-//   lieu pendant que cette catégorie était sélectionnée" est une hypothèse
-//   sûre) ; sinon on démarre à 0 par prudence plutôt que de deviner.
-// - Pokémon déjà trouvés dans une forme (pokemonCycleStart > 0 sous l'ancien
-//   système) : on reprend tel quel leur ancien compteur "depuis reset" propre
-//   à leur chasse (la donnée la plus fiable dont on dispose) comme valeur de
-//   départ du nouveau compteur global.
-function migrateToGlobalPity(){
-  if(state._migratedGlobalPity) return;
-
-  const activeShape = state.formShape;
-  const grandTotal = Number(state.grandTotal) || 0;
-
-  // Une seule catégorie de forme a-t-elle jamais été utilisée ? (si une autre
-  // catégorie a déjà des données, on ne peut plus supposer que 100% des
-  // rencontres historiques comptent pour activeShape)
-  const otherShapesHaveData = state.hunts.some(h =>
-    Object.entries(h.formCycles || {}).some(([shape, cyc]) =>
-      shape !== activeShape && cyc && cyc.pokemonPity &&
-      Object.values(cyc.pokemonPity).some(v => Number(v) > 0)
-    )
-  );
-  if(!otherShapesHaveData){
-    state.formShapeTotals[activeShape] = Math.max(Number(state.formShapeTotals[activeShape]) || 0, grandTotal);
-  }
-
-  const shinyEverFound = (Number(state.shinyTracker && state.shinyTracker.total) || 0) > 0;
-
-  state.hunts.forEach(h => {
-    const oldFormCycle = (h.formCycles || {})[activeShape] || {};
-    const oldFormPity = oldFormCycle.pokemonPity || {};
-    const oldFormStart = oldFormCycle.pokemonCycleStart || {};
-    const oldShinyPity = (h.shinyCycle || {}).pokemonPity || {};
-
-    h.pokemon.forEach(p => {
-      // --- forme (catégorie active uniquement ; les autres restent à 0,
-      //     elles n'ont jamais eu de données sous l'ancien système non plus) ---
-      if(!(activeShape in p.formPity)){
-        const wasIndividuallyReset = (Number(oldFormStart[p.id]) || 0) > 0;
-        if(wasIndividuallyReset){
-          // Pokémon déjà trouvé dans cette forme : on reprend son ancien
-          // compteur "depuis reset" (propre à sa chasse) tel quel.
-          p.formPity[activeShape] = Math.max(0, Number(oldFormPity[p.id]) || 0);
-        } else if(isPokemonFormEligible(p, activeShape)){
-          // Jamais trouvé, jamais gelé : aligné sur le total global de la catégorie.
-          p.formPity[activeShape] = Number(state.formShapeTotals[activeShape]) || 0;
-        } else {
-          // Gelé (case décochée) : on conserve sa dernière valeur connue.
-          p.formPity[activeShape] = Math.max(0, Number(oldFormPity[p.id]) || 0);
-        }
-      }
-
-      // --- shiny (global d'office, pas de notion de gel) ---
-      if(!p._shinyResetAtMigrated){
-        p.shinyResetAt = shinyEverFound
-          ? Math.max(0, grandTotal - (Number(oldShinyPity[p.id]) || 0))
-          : 0;
-        p._shinyResetAtMigrated = true;
-      }
-    });
-  });
-
-  state._migratedGlobalPity = true;
 }
 
 async function loadState(){
@@ -2929,16 +2670,6 @@ function startHuntTimer(){
 /* =================== FIN TIMERS DE CHASSE ==================== */
 
 function activeHunt(){ return state.hunts.find(h => h.id === state.activeHuntId) || null; }
-// Le pity (forme/shiny) est maintenant GLOBAL, toutes chasses confondues : un
-// Pokémon donné peut avoir besoin d'être retrouvé par son id sans connaître sa
-// chasse d'appartenance (ex: restauration d'un "trouvé" via l'historique).
-function findPokemonGlobalById(pid){
-  for(const h of state.hunts){
-    const p = h.pokemon.find(x => x.id === pid);
-    if(p) return p;
-  }
-  return null;
-}
 function activePokemon(){
   const h = activeHunt();
   return h ? (h.pokemon.find(p=>p.id===state.activePokemonId) || h.pokemon[0] || null) : null;
@@ -3014,47 +2745,49 @@ async function logEncounterByPokemon(pId) {
 }
 
 function bumpGlobalPity(){
+  const h = activeHunt();
   state.shinyTracker.pityCurrent = (Number(state.shinyTracker.pityCurrent)||0) + 1;
-  state.formTracker.pityCurrent = (Number(state.formTracker.pityCurrent)||0) + 1;
-  // Total global (toutes chasses confondues) de la catégorie de forme active —
-  // référence commune pour la convergence "forme" de tous les Pokémon jamais
-  // trouvés/gelés dans cette forme (voir render() et migrateToGlobalPity()).
-  state.formShapeTotals[state.formShape] = (Number(state.formShapeTotals[state.formShape])||0) + 1;
-  // Pity de forme, PAR POKÉMON, GLOBAL (toutes chasses confondues) : on
-  // parcourt tous les Pokémon de TOUTES les chasses (plus seulement la chasse
-  // active), pour que le résultat soit cohérent quelle que soit la chasse
-  // dans laquelle la rencontre vient d'être loguée. Le shiny n'a plus besoin
-  // d'être incrémenté ici : il se calcule à la volée via state.grandTotal
-  // (pas de notion de gel pour le shiny, donc pas besoin de stocker un
-  // compteur qui pourrait se désynchroniser).
-  state.hunts.forEach(h => {
+  // Le compteur "forme alternative" ne doit avancer que lorsqu'un événement
+  // est effectivement en cours (case "Événement en cours" cochée) : sinon,
+  // chaque rencontre incrémenterait à tort un pity qui ne correspond à rien.
+  if(state.formEventActive){
+    state.formTracker.pityCurrent = (Number(state.formTracker.pityCurrent)||0) + 1;
+  }
+  // Idem, mais par Pokémon : h.formCycle pointe déjà vers la forme active
+  // (state.formShape) via l'accesseur -> les autres formes ne sont pas touchées.
+  if(h){
     h.pokemon.forEach(pokemon => {
+      h.shinyCycle.pokemonPity[pokemon.id] = (Number(h.shinyCycle.pokemonPity[pokemon.id])||0) + 1;
       // Gel par disponibilité de forme : si ce Pokémon n'a pas la forme
       // actuellement sélectionnée (case décochée), son pity de forme reste
       // figé et ne doit pas évoluer, même si une rencontre vient d'avoir lieu.
-      if(isPokemonFormEligible(pokemon, state.formShape)){
-        pokemon.formPity = pokemon.formPity || {};
-        pokemon.formPity[state.formShape] = (Number(pokemon.formPity[state.formShape])||0) + 1;
+      // Gel également si aucun événement forme n'est en cours.
+      if(state.formEventActive && isPokemonFormEligible(pokemon, state.formShape)){
+        h.formCycle.pokemonPity[pokemon.id] = (Number(h.formCycle.pokemonPity[pokemon.id])||0) + 1;
       }
     });
-  });
+  }
 }
 
 // Inverse exact de bumpGlobalPity() : utilisé quand on retire une rencontre
 // (bouton "retirer une rencontre"), pour que les compteurs de pity restent
-// synchronisés avec grandTotal au lieu de dériver vers le haut au fil des corrections.
+// synchronisés avec h.total au lieu de dériver vers le haut au fil des corrections.
 function unbumpGlobalPity(){
+  const h = activeHunt();
   state.shinyTracker.pityCurrent = Math.max(0, (Number(state.shinyTracker.pityCurrent)||0) - 1);
-  state.formTracker.pityCurrent = Math.max(0, (Number(state.formTracker.pityCurrent)||0) - 1);
-  state.formShapeTotals[state.formShape] = Math.max(0, (Number(state.formShapeTotals[state.formShape])||0) - 1);
-  state.hunts.forEach(h => {
+  if(state.formEventActive){
+    state.formTracker.pityCurrent = Math.max(0, (Number(state.formTracker.pityCurrent)||0) - 1);
+  }
+  if(h){
     h.pokemon.forEach(pokemon => {
-      if(isPokemonFormEligible(pokemon, state.formShape)){
-        pokemon.formPity = pokemon.formPity || {};
-        pokemon.formPity[state.formShape] = Math.max(0, (Number(pokemon.formPity[state.formShape])||0) - 1);
+      h.shinyCycle.pokemonPity[pokemon.id] = Math.max(0, (Number(h.shinyCycle.pokemonPity[pokemon.id])||0) - 1);
+      // Symétrique de bumpGlobalPity : on ne retire ce qui n'a jamais été
+      // ajouté pour un Pokémon gelé sur cette forme.
+      if(state.formEventActive && isPokemonFormEligible(pokemon, state.formShape)){
+        h.formCycle.pokemonPity[pokemon.id] = Math.max(0, (Number(h.formCycle.pokemonPity[pokemon.id])||0) - 1);
       }
     });
-  });
+  }
 }
 
 function registerGlobalHit(tracker){
@@ -3069,70 +2802,45 @@ function registerGlobalHit(tracker){
   tracker.total = (Number(tracker.total)||0) + 1;
 }
 
-// Pity global (forme/shiny) : ces snapshots capturent la valeur de TOUS les
-// Pokémon (toutes chasses confondues) avant une série de "-1", pour que le
-// bouton "↩" puisse tout restaurer d'un coup même après plusieurs "-1"
-// enchaînés — équivalent du snapshot "cycle" complet de l'ancien système,
-// adapté au stockage par-Pokémon désormais global.
-function snapshotAllFormPity(shape){
-  const snap = {};
-  state.hunts.forEach(h => h.pokemon.forEach(p => { snap[p.id] = Number(p.formPity && p.formPity[shape]) || 0; }));
-  return snap;
-}
-function restoreAllFormPity(shape, snap){
-  if(!snap) return;
-  state.hunts.forEach(h => h.pokemon.forEach(p => {
-    if(p.id in snap){ p.formPity = p.formPity || {}; p.formPity[shape] = snap[p.id]; }
-  }));
-}
-function snapshotAllShinyResetAt(){
-  const snap = {};
-  state.hunts.forEach(h => h.pokemon.forEach(p => { snap[p.id] = Number(p.shinyResetAt) || 0; }));
-  return snap;
-}
-function restoreAllShinyResetAt(snap){
-  if(!snap) return;
-  state.hunts.forEach(h => h.pokemon.forEach(p => {
-    if(p.id in snap) p.shinyResetAt = snap[p.id];
-  }));
-}
-
 function decrementShinyEncounter(){
   if(!state.shinyHistory.length){
     showToast('Aucun historique disponible', null);
     return;
   }
+  const h = activeHunt();
   if(!state.shinyUndoOrigin){
     state.shinyUndoOrigin = {
       tracker: JSON.parse(JSON.stringify(state.shinyTracker)),
-      shinyResetAtSnapshot: snapshotAllShinyResetAt()
+      cycle: h ? JSON.parse(JSON.stringify(h.shinyCycle)) : null,
+      huntId: h ? h.id : null
     };
     state.shinyHistoryOrigin = JSON.parse(JSON.stringify(state.shinyHistory));
   }
   const entry = state.shinyHistory.pop();
   state.shinyTracker = entry.tracker;
-  // Pity shiny GLOBAL : on restaure le baseline du Pokémon concerné (retrouvé
-  // par id, toutes chasses confondues, plus besoin de connaître sa chasse).
-  if(entry.pokemonId){
-    const ep = findPokemonGlobalById(entry.pokemonId);
-    if(ep) ep.shinyResetAt = Number(entry.beforeShinyResetAt) || 0;
+  if(entry.cycle){
+    const eh = state.hunts.find(x => x.id === entry.huntId);
+    if(eh) eh.shinyCycle = entry.cycle;
   }
   saveState();
   render();
-  showToast(`-1 Shiny (${state.shinyTracker.total} au total)`, null);
+  showToast(`-1 shiny (${state.shinyTracker.total} au total)`, null);
 }
 
 function undoShinyEncounter(){
   if(!state.shinyUndoOrigin){ showToast('Aucun retour en arrière possible', null); return; }
   const origin = state.shinyUndoOrigin;
   state.shinyTracker = origin.tracker;
-  restoreAllShinyResetAt(origin.shinyResetAtSnapshot);
+  if(origin.cycle){
+    const h = state.hunts.find(x => x.id === origin.huntId);
+    if(h) h.shinyCycle = origin.cycle;
+  }
   state.shinyHistory = state.shinyHistoryOrigin || state.shinyHistory;
   state.shinyUndoOrigin = null;
   state.shinyHistoryOrigin = null;
   saveState();
   render();
-  showToast('Retour en arrière effectué (Shiny)', null);
+  showToast('Retour en arrière effectué (shiny)', null);
 }
 
 function decrementFormEncounter(){
@@ -3140,41 +2848,40 @@ function decrementFormEncounter(){
     showToast('Aucun historique disponible', null);
     return;
   }
+  const h = activeHunt();
   if(!state.formUndoOrigin){
     state.formUndoOrigin = {
       tracker: JSON.parse(JSON.stringify(state.formTracker)),
-      shape: state.formShape,
-      formPitySnapshot: snapshotAllFormPity(state.formShape)
+      cycle: h ? JSON.parse(JSON.stringify(h.formCycle)) : null,
+      huntId: h ? h.id : null
     };
     state.formHistoryOrigin = JSON.parse(JSON.stringify(state.formHistory));
   }
   const entry = state.formHistory.pop();
   state.formTracker = entry.tracker;
-  // Pity de forme GLOBAL : on restaure le baseline du Pokémon concerné pour
-  // la catégorie où il avait été trouvé (retrouvé par id, toutes chasses confondues).
-  if(entry.pokemonId && entry.shape){
-    const ep = findPokemonGlobalById(entry.pokemonId);
-    if(ep){
-      ep.formPity = ep.formPity || {};
-      ep.formPity[entry.shape] = Number(entry.beforeFormPity) || 0;
-    }
+  if(entry.cycle){
+    const eh = state.hunts.find(x => x.id === entry.huntId);
+    if(eh) eh.formCycle = entry.cycle;
   }
   saveState();
   render();
-  showToast(`-1 Forme Alternative (${state.formTracker.total} au total)`, null);
+  showToast(`-1 forme alternative (${state.formTracker.total} au total)`, null);
 }
 
 function undoFormEncounter(){
   if(!state.formUndoOrigin){ showToast('Aucun retour en arrière possible', null); return; }
   const origin = state.formUndoOrigin;
   state.formTracker = origin.tracker;
-  restoreAllFormPity(origin.shape || state.formShape, origin.formPitySnapshot);
+  if(origin.cycle){
+    const h = state.hunts.find(x => x.id === origin.huntId);
+    if(h) h.formCycle = origin.cycle;
+  }
   state.formHistory = state.formHistoryOrigin || state.formHistory;
   state.formUndoOrigin = null;
   state.formHistoryOrigin = null;
   saveState();
   render();
-  showToast('Retour en arrière effectué (Form Alternative)', null);
+  showToast('Retour en arrière effectué (form alternative)', null);
 }
 
 function resetGrandTotal(){
@@ -3202,16 +2909,7 @@ function pokemonEncounterRate(h, p){
 
 async function render(){
   if(!loaded) return;
-  // Tout le corps de render() est protégé par ce try/catch : cette fonction
-  // est rappelée à CHAQUE rencontre comptée (souvent en rafale avec la
-  // détection OCR), donc la moindre exception non interceptée quelque part
-  // dedans (donnée Pokémon inattendue, calcul qui échoue pour un cas
-  // particulier...) interrompait auparavant render() en plein milieu et
-  // laissait l'appli figée sur un écran vide, sans aucun message ni moyen
-  // de continuer à l'utiliser. On affiche maintenant un message d'erreur
-  // récupérable à la place, et l'app reste utilisable pour le reste
-  // (changer de chasse, etc.) plutôt que de rester bloquée indéfiniment.
-  try {
+
   const st = state.shinyTracker, ft = state.formTracker;
 
   document.getElementById('shinyTotalValue').innerHTML =
@@ -3226,11 +2924,11 @@ async function render(){
     ? `taux ${((st.total / state.grandTotal) * 100).toFixed(2)}% · moyenne ${(state.grandTotal / st.total).toFixed(1)}`
     : 'taux — · moyenne —';
 
-  document.getElementById('shinyTotalEdit').onclick = () => editStatValue('Corriger le total Shiny', st.total, (v)=>{ state.shinyTracker.total = v; saveState(); render(); });
-  document.getElementById('shinyPityCurrentEdit').onclick = () => editStatValue('Corriger "depuis le dernier" (Shiny)', st.pityCurrent, (v)=>{ state.shinyTracker.pityCurrent = v; saveState(); render(); });
-  document.getElementById('shinyPityMinEdit').onclick = () => editStatValue('Corriger le minimum (Shiny)', st.pityHits ? st.pityMin : 0, (v)=>{ state.shinyTracker.pityMin = v; if(!state.shinyTracker.pityHits) state.shinyTracker.pityHits = 1; saveState(); render(); });
-  document.getElementById('shinyPityMaxEdit').onclick = () => editStatValue('Corriger le maximum (Shiny)', st.pityHits ? st.pityMax : 0, (v)=>{ state.shinyTracker.pityMax = v; if(!state.shinyTracker.pityHits) state.shinyTracker.pityHits = 1; saveState(); render(); });
-  document.getElementById('shinyPityLastEdit').onclick = () => editStatValue('Corriger le dernier intervalle (Shiny)', st.pityHits ? st.pityLast : 0, (v)=>{ state.shinyTracker.pityLast = v; if(!state.shinyTracker.pityHits) state.shinyTracker.pityHits = 1; saveState(); render(); });
+  document.getElementById('shinyTotalEdit').onclick = () => editStatValue('Corriger le total shiny', st.total, (v)=>{ state.shinyTracker.total = v; saveState(); render(); });
+  document.getElementById('shinyPityCurrentEdit').onclick = () => editStatValue('Corriger "depuis le dernier" (shiny)', st.pityCurrent, (v)=>{ state.shinyTracker.pityCurrent = v; saveState(); render(); });
+  document.getElementById('shinyPityMinEdit').onclick = () => editStatValue('Corriger le minimum (shiny)', st.pityHits ? st.pityMin : 0, (v)=>{ state.shinyTracker.pityMin = v; if(!state.shinyTracker.pityHits) state.shinyTracker.pityHits = 1; saveState(); render(); });
+  document.getElementById('shinyPityMaxEdit').onclick = () => editStatValue('Corriger le maximum (shiny)', st.pityHits ? st.pityMax : 0, (v)=>{ state.shinyTracker.pityMax = v; if(!state.shinyTracker.pityHits) state.shinyTracker.pityHits = 1; saveState(); render(); });
+  document.getElementById('shinyPityLastEdit').onclick = () => editStatValue('Corriger le dernier intervalle (shiny)', st.pityHits ? st.pityLast : 0, (v)=>{ state.shinyTracker.pityLast = v; if(!state.shinyTracker.pityHits) state.shinyTracker.pityHits = 1; saveState(); render(); });
 
   document.getElementById('shinyMinusBtn').onclick = decrementShinyEncounter;
   const shinyUndoBtn = document.getElementById('shinyUndoBtn');
@@ -3248,17 +2946,12 @@ async function render(){
   document.getElementById('formRateSub').textContent = ft.total && state.grandTotal
     ? `taux ${((ft.total / state.grandTotal) * 100).toFixed(2)}% · moyenne ${(state.grandTotal / ft.total).toFixed(1)}`
     : 'taux — · moyenne —';
-  // Total global (toutes chasses confondues) de la catégorie de forme
-  // actuellement sélectionnée — la référence que suit la convergence "forme
-  // Pokémon" de tout Pokémon jamais trouvé/gelé dans cette forme.
-  document.getElementById('formShapeTotalSub').textContent =
-    `Total ${state.formShape} : ${Number(state.formShapeTotals && state.formShapeTotals[state.formShape]) || 0}`;
 
-  document.getElementById('formTotalEdit').onclick = () => editStatValue('Corriger le total Forme Alternative', ft.total, (v)=>{ state.formTracker.total = v; saveState(); render(); });
-  document.getElementById('formPityCurrentEdit').onclick = () => editStatValue('Corriger "depuis la dernière" (Forme)', ft.pityCurrent, (v)=>{ state.formTracker.pityCurrent = v; saveState(); render(); });
-  document.getElementById('formPityMinEdit').onclick = () => editStatValue('Corriger le minimum (Forme)', ft.pityHits ? ft.pityMin : 0, (v)=>{ state.formTracker.pityMin = v; if(!state.formTracker.pityHits) state.formTracker.pityHits = 1; saveState(); render(); });
-  document.getElementById('formPityMaxEdit').onclick = () => editStatValue('Corriger le maximum (Forme)', ft.pityHits ? ft.pityMax : 0, (v)=>{ state.formTracker.pityMax = v; if(!state.formTracker.pityHits) state.formTracker.pityHits = 1; saveState(); render(); });
-  document.getElementById('formPityLastEdit').onclick = () => editStatValue('Corriger le dernier intervalle (Forme)', ft.pityHits ? ft.pityLast : 0, (v)=>{ state.formTracker.pityLast = v; if(!state.formTracker.pityHits) state.formTracker.pityHits = 1; saveState(); render(); });
+  document.getElementById('formTotalEdit').onclick = () => editStatValue('Corriger le total forme alternative', ft.total, (v)=>{ state.formTracker.total = v; saveState(); render(); });
+  document.getElementById('formPityCurrentEdit').onclick = () => editStatValue('Corriger "depuis la dernière" (forme)', ft.pityCurrent, (v)=>{ state.formTracker.pityCurrent = v; saveState(); render(); });
+  document.getElementById('formPityMinEdit').onclick = () => editStatValue('Corriger le minimum (forme)', ft.pityHits ? ft.pityMin : 0, (v)=>{ state.formTracker.pityMin = v; if(!state.formTracker.pityHits) state.formTracker.pityHits = 1; saveState(); render(); });
+  document.getElementById('formPityMaxEdit').onclick = () => editStatValue('Corriger le maximum (forme)', ft.pityHits ? ft.pityMax : 0, (v)=>{ state.formTracker.pityMax = v; if(!state.formTracker.pityHits) state.formTracker.pityHits = 1; saveState(); render(); });
+  document.getElementById('formPityLastEdit').onclick = () => editStatValue('Corriger le dernier intervalle (forme)', ft.pityHits ? ft.pityLast : 0, (v)=>{ state.formTracker.pityLast = v; if(!state.formTracker.pityHits) state.formTracker.pityHits = 1; saveState(); render(); });
 
   document.getElementById('formMinusBtn').onclick = decrementFormEncounter;
   const formUndoBtn = document.getElementById('formUndoBtn');
@@ -3270,6 +2963,16 @@ async function render(){
     formShapeSelect.value = state.formShape;
     formShapeSelect.onchange = (e) => {
       state.formShape = FORM_SHAPES.includes(e.target.value) ? e.target.value : 'Summer';
+      saveState();
+      render();
+    };
+  }
+
+  const formEventActiveToggle = document.getElementById('formEventActiveToggle');
+  if(formEventActiveToggle){
+    formEventActiveToggle.checked = !!state.formEventActive;
+    formEventActiveToggle.onchange = (e) => {
+      state.formEventActive = !!e.target.checked;
       saveState();
       render();
     };
@@ -3384,15 +3087,25 @@ async function render(){
   // pity par Pokémon (voir bumpGlobalPity).
   const pFormFrozen = p && analysisType === 'FORME' && !isPokemonFormEligible(p, state.formShape);
 
-  // Les données PokeAPI manquantes (types, taux de capture, stats, talents)
-  // sont récupérées en arrière-plan par enrichPokemonDataInBackground, qui
-  // relance render() une fois disponibles — on ne les attend plus ici, pour
-  // que l'affichage ne dépende jamais de la vitesse ou de la disponibilité
-  // du réseau (voir le commentaire sur cette fonction plus haut dans le
-  // fichier). Tant qu'elles ne sont pas arrivées, le reste de render() doit
-  // simplement composer avec des valeurs manquantes (déjà le cas : voir par
-  // ex. catchProbability et les affichages "—" pour captureRate/natures).
-  enrichPokemonDataInBackground(h);
+  for (let x of h.pokemon) {
+    if (!x.types || x.types.length === 0) {
+      x.types = await fetchPokemonTypes(x.name);
+    }
+    if (x.captureRate === null || x.captureRate === undefined) {
+      x.captureRate = await fetchCaptureRate(x.name);
+    }
+    if (!x.natureStats) {
+      // Sert uniquement de repli pour "Nature(s) recommandée(s)" quand ce
+      // Pokémon n'a pas de set compétitif documenté (voir
+      // computeHeuristicNatures) — évite l'affichage "N/A".
+      x.natureStats = await fetchPokemonStats(x.name);
+    }
+    if (!x.natureAbilities) {
+      // Sert au repli "set estimé" (nature + talent réel + rôle) de
+      // getRecommendedSetDetailsHtml — voir computeHeuristicSets.
+      x.natureAbilities = await fetchPokemonAbilities(x.name);
+    }
+  }
 
   let pokemonAverage = 0;
   if (p && p.total > 0 && h.total > 0) {
@@ -3401,21 +3114,22 @@ async function render(){
 
   const rareRateValue = analysisType === 'SHINY' ? 8196 : (FORM_SHAPE_DENOM[state.formShape] || 750);
   const analysisLabel = analysisType === 'SHINY' ? 'SHINY' : state.formShape.toUpperCase();
+  const cycle = analysisType === 'SHINY' ? h.shinyCycle : h.formCycle;
   const currentRarePity = analysisType === 'SHINY' ? (state.shinyTracker.pityCurrent || 0) : (state.formTracker.pityCurrent || 0);
 
   const pokemonRate = p ? pokemonEncounterRate(h, p) : 0;
-  // N pour les deux courbes du graphique :
+  // N pour les deux courbes du graphique : on lit directement les compteurs
+  // "pity" déjà fiables et déjà gelés par forme (mêmes valeurs que celles
+  // affichées dans l'onglet forme / shiny de la colonne de gauche), plutôt
+  // que de recalculer depuis h.total (partagé entre toutes les formes et
+  // jamais gelé — c'était la source du désync N=2738 / pity 0 constaté sur Xmas).
   // - encountersSinceCycle (courbe "Cycle", globale) = currentRarePity,
   //   identique à formTracker.pityCurrent / shinyTracker.pityCurrent.
-  // - encountersSinceReset (courbe "Après reset", ce Pokémon précis) = pity
-  //   GLOBAL (toutes chasses confondues, voir bumpGlobalPity/migrateToGlobalPity) :
-  //   * SHINY -> calculé à la volée, state.grandTotal - p.shinyResetAt (pas de gel possible).
-  //   * FORME -> p.formPity[state.formShape], gelé tant que la case de cette
-  //     forme est décochée, remis à 0 uniquement quand CE Pokémon est trouvé.
+  // - encountersSinceReset (courbe "Après reset", ce Pokémon précis) =
+  //   cycle.pokemonPity[p.id], gelé pour cette forme tant qu'elle n'est pas
+  //   sélectionnée, remis à 0 uniquement quand CE Pokémon est trouvé.
   const encountersSinceCycle = p ? currentRarePity : 0;
-  const encountersSinceReset = !p ? 0 : (analysisType === 'SHINY'
-    ? Math.max(0, (Number(state.grandTotal)||0) - (Number(p.shinyResetAt)||0))
-    : (Number(p.formPity && p.formPity[state.formShape]) || 0));
+  const encountersSinceReset = p ? (Number(cycle.pokemonPity && cycle.pokemonPity[p.id]) || 0) : 0;
 
   // Convergence cycle : GLOBALE, probabilité cumulative 1-(1-p)^N depuis le dernier reset global (tous Pokémon confondus)
   const convergenceCycle = p ? cumulativeFormProbability(pokemonRate, encountersSinceCycle, rareRateValue) : 0;
@@ -3519,7 +3233,7 @@ async function render(){
               ${getRecommendedSetDetailsHtml(x.name, x.natureStats, x.natureAbilities)}
             </div>
           </div>
-          <div class="form-avail-row" title="Formes possédées par ${escapeHtml(x.name)} — décocher une Forme la fige (statistiques gelées) pour ce Pokémon">
+          <div class="form-avail-row" title="Formes possédées par ${escapeHtml(x.name)} — décocher une forme la fige (statistiques gelées) pour ce Pokémon">
             ${FORM_SHAPES.map(shape=>{
               const checked = isPokemonFormEligible(x, shape);
               const isCurrent = shape === state.formShape;
@@ -3556,11 +3270,11 @@ async function render(){
               <button class="act danger-outline ha-minus" data-pid="${x.id}" style="font-size:11px;padding:5px 8px;flex:0 0 40px;">-1</button>
             </div>
           </div>
-          ${x.variant === 'shiny' ? `<div class="counter-card since-shiny"><div class="k">depuis Shiny</div><div class="v">${x.sinceShiny}</div></div>` : ''}
-          ${x.variant === 'form' ? `<div class="counter-card since-form"><div class="k">depuis Form Alternative</div><div class="v">${x.sinceForm}</div></div>` : ''}
+          ${x.variant === 'shiny' ? `<div class="counter-card since-shiny"><div class="k">depuis shiny</div><div class="v">${x.sinceShiny}</div></div>` : ''}
+          ${x.variant === 'form' ? `<div class="counter-card since-form"><div class="k">depuis form alternative</div><div class="v">${x.sinceForm}</div></div>` : ''}
         </div>
         <div class="pity-card">
-          <div class="k">pseudo Pity — intervalle entre deux rencontres</div>
+          <div class="k">pseudo pity — intervalle entre deux rencontres</div>
           <div class="pity-grid">
             <div class="pity-item">actuel<strong>${x.pityCurrent}</strong></div>
             <div class="pity-item">minimum<strong>${x.pityHits ? x.pityMin : '—'}</strong></div>
@@ -3577,32 +3291,6 @@ async function render(){
         </div>
       </div>`;
   }).join('');
-
-  // Le <video id="captureVideo"> ci-dessous (partage d'écran en direct pour
-  // l'OCR) fait partie du bloc régénéré par main.innerHTML juste après.
-  // Comme render() est appelé à CHAQUE rencontre comptée (très fréquent
-  // avec la détection automatique active), reconstruire ce <video> à partir
-  // d'une chaîne HTML détruit l'ancien élément et en crée un nouveau : le
-  // flux vidéo doit alors recharger ses métadonnées, et pendant ce court
-  // instant la vidéo reprend sa taille par défaut avant de retrouver sa
-  // vraie taille — d'où l'app qui "saute" verticalement à chaque comptage.
-  // On sauvegarde donc ici le nœud DOM live existant (pas juste le flux)
-  // pour le replacer tel quel après coup (voir plus bas), au lieu de
-  // laisser le HTML en recréer un vide.
-  const existingCaptureVideoEl = document.getElementById('captureVideo');
-
-  // Même souci que le <video> ci-dessus, mais pour le défilement de la page :
-  // #mainArea n'a pas son propre scroll interne (pas d'overflow défini), c'est
-  // la FENÊTRE qui défile. Reconstruire tout le contenu via main.innerHTML
-  // recrée aussi les sprites <img> des cartes Pokémon, qui repartent d'une
-  // hauteur nulle/par défaut tant qu'ils n'ont pas fini de charger : la page
-  // devient brièvement plus courte que la position de scroll actuelle, et le
-  // navigateur clampe alors le scroll vers le haut — d'où le petit saut rapide
-  // de bas en haut à chaque comptage si on regardait une carte plus bas dans
-  // la liste. On mémorise la position de la fenêtre avant de reconstruire,
-  // puis on la restaure juste après (et une seconde fois au frame suivant,
-  // une fois la mise en page stabilisée, au cas où le clamp se reproduirait).
-  const savedScrollY = window.scrollY;
 
   main.innerHTML = `
     <div class="hunt-header">
@@ -3666,19 +3354,11 @@ async function render(){
           <span class="track"></span>
           détection OCR automatique
         </label>
-        ${mediaStream ? `<div class="zoom-row" title="Zoome l'aperçu pour encadrer plus précisément la zone OCR, puis fais défiler l'image pour atteindre la zone voulue">
-          <span class="zoom-label">🔍</span>
-          <input type="range" id="captureZoomSlider" min="100" max="400" step="10" value="${Math.round(captureZoomLevel*100)}">
-          <span class="zoom-value" id="captureZoomValue">${Math.round(captureZoomLevel*100)}%</span>
-          <button class="act" id="captureZoomResetBtn" style="font-size:10px;padding:3px 7px;">Réinitialiser</button>
-        </div>` : ''}
       </div>
       <div style="${captureCollapsed ? 'display:none;' : ''}">
         <div class="capture-stage ${mediaStream ? 'on' : ''}" id="captureStage">
-          <div class="capture-canvas-wrap" id="captureCanvasWrap">
-            <video id="captureVideo" autoplay muted playsinline></video>
-            <canvas class="overlay" id="overlayCanvas"></canvas>
-          </div>
+          <video id="captureVideo" autoplay muted playsinline></video>
+          <canvas class="overlay" id="overlayCanvas"></canvas>
         </div>
         <div class="status-line ${region ? 'ok' : ''}" id="captureStatus">
           ${mediaStream ? (region ? '<span class="cm">zone calibrée ✓ — la détection surveille cette zone</span>' : 'trace un rectangle sur l’image, sur la zone où apparaît le texte de rencontre / combat') : 'partage la fenêtre du jeu pour activer la détection — l’OCR continue même si tu changes d’onglet'}
@@ -3714,7 +3394,7 @@ async function render(){
             <button class="act" id="graphCollapseBtn" style="font-size:10px;padding:3px 7px;">${graphCollapsed ? '▸' : '▾'}</button>
           </div>
           <div style="background:linear-gradient(180deg,#0a2233,#050f18);border:1px solid var(--border);border-radius:10px;padding:12px;justify-content:center;align-items:center;${(graphCollapsed || pFormFrozen) ? 'display:none;' : 'display:flex;'}">
-          <svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMidYMid meet" style="max-width:100%;height:auto;overflow:visible;">
+          <svg width="${svgWidth}" height="${svgHeight}" style="max-width:100%;height:auto;overflow:visible;">
             <defs>
               <linearGradient id="convAreaGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stop-color="var(--func)" stop-opacity="0.38"/>
@@ -3753,7 +3433,7 @@ async function render(){
             </g>
           </svg>
           </div>
-          ${graphCollapsed ? `<div style="font-size:10px;color:var(--text-dim);">graphique masqué</div>` : (pFormFrozen ? `<div style="font-size:10px;color:var(--text-dim);">❄ ${escapeHtml(p.name)} n'a pas la Forme ${escapeHtml(state.formShape)} — graphique gelé</div>` : '')}
+          ${graphCollapsed ? `<div style="font-size:10px;color:var(--text-dim);">graphique masqué</div>` : (pFormFrozen ? `<div style="font-size:10px;color:var(--text-dim);">❄ ${escapeHtml(p.name)} n'a pas la forme ${escapeHtml(state.formShape)} — graphique gelé</div>` : '')}
         </div>
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
@@ -3766,14 +3446,14 @@ async function render(){
             <span>Probabilité de rencontre de ${p ? escapeHtml(p.name) : 'ce Pokémon'} : <strong>${p ? p.pityCurrent : 0} / ${pokemonAverage > 0 ? pokemonAverage.toFixed(1) : '—'}</strong></span>
             <span>Pity ${analysisLabel} global : <strong>${currentRarePity} / ${rareRateValue}</strong></span>
             <hr style="border:0;border-top:1px solid rgba(255,255,255,0.1);margin:4px 0;">
-            <span>Convergence Forme Pokémon (${encountersGlobalDisplay} rencontres depuis le dernier reset de ${p ? escapeHtml(p.name) : 'ce Pokémon'}) : <strong>${convergenceGlobalDisplay.toFixed(1)}%</strong></span>
-            <span>Convergence Forme global (${encountersPokemonFormDisplay} rencontres depuis le dernier reset du cycle) : <strong>${convergencePokemonFormDisplay.toFixed(1)}%</strong></span>
+            <span>Convergence forme Pokémon (${encountersGlobalDisplay} rencontres depuis le dernier reset de ${p ? escapeHtml(p.name) : 'ce Pokémon'}) : <strong>${convergenceGlobalDisplay.toFixed(1)}%</strong></span>
+            <span>Convergence forme global (${encountersPokemonFormDisplay} rencontres depuis le dernier reset du cycle) : <strong>${convergencePokemonFormDisplay.toFixed(1)}%</strong></span>
             <span>Statut : <span class="convergence-status-badge ${statusClass}">${statusText}</span></span>
           </div>
-          ${statsCollapsed ? `<div style="font-size:10px;color:var(--text-dim);">détails masqués</div>` : (pFormFrozen ? `<div style="font-size:10px;color:var(--text-dim);">❄ ${escapeHtml(p.name)} n'a pas la Forme ${escapeHtml(state.formShape)} — statistiques gelées</div>` : '')}
+          ${statsCollapsed ? `<div style="font-size:10px;color:var(--text-dim);">détails masqués</div>` : (pFormFrozen ? `<div style="font-size:10px;color:var(--text-dim);">❄ ${escapeHtml(p.name)} n'a pas la forme ${escapeHtml(state.formShape)} — statistiques gelées</div>` : '')}
         </div>
       </div>
-      ${analysisCollapsed ? (pFormFrozen ? `<div style="font-size:10px;color:var(--text-dim);margin-top:6px;">❄ panneau réduit — ${escapeHtml(p.name)} n'a pas la Forme ${escapeHtml(state.formShape)}</div>` : `<div style="font-size:10px;color:var(--text-dim);margin-top:6px;">panneau réduit — ${p ? escapeHtml(p.name) : 'aucun Pokémon'} : Forme Pokémon ${convergenceGlobalDisplay.toFixed(1)}% / Forme global ${convergencePokemonFormDisplay.toFixed(1)}%</div>`) : ''}
+      ${analysisCollapsed ? (pFormFrozen ? `<div style="font-size:10px;color:var(--text-dim);margin-top:6px;">❄ panneau réduit — ${escapeHtml(p.name)} n'a pas la forme ${escapeHtml(state.formShape)}</div>` : `<div style="font-size:10px;color:var(--text-dim);margin-top:6px;">panneau réduit — ${p ? escapeHtml(p.name) : 'aucun Pokémon'} : forme Pokémon ${convergenceGlobalDisplay.toFixed(1)}% / forme global ${convergencePokemonFormDisplay.toFixed(1)}%</div>`) : ''}
     </div>
 
     <div class="actions" style="margin-bottom:22px;">
@@ -3794,49 +3474,8 @@ async function render(){
     ${cards}
   `;
 
-  // Remet en place le <video> live existant (avec son flux déjà attaché et
-  // en cours de lecture) à la place du nouveau placeholder vide que le HTML
-  // ci-dessus vient de créer — voir le commentaire au-dessus de
-  // existingCaptureVideoEl. La lecture n'est ainsi jamais interrompue :
-  // aucun rechargement de métadonnées, donc plus de saut de mise en page.
-  if (existingCaptureVideoEl && existingCaptureVideoEl.srcObject && mediaStream) {
-    const freshCaptureVideoEl = document.getElementById('captureVideo');
-    if (freshCaptureVideoEl && freshCaptureVideoEl !== existingCaptureVideoEl) {
-      freshCaptureVideoEl.replaceWith(existingCaptureVideoEl);
-    }
-  }
-
-  // Restaure la position de défilement de la fenêtre mémorisée avant la
-  // reconstruction — supprime le saut visuel à chaque rencontre comptée (voir
-  // savedScrollY ci-dessus). Une deuxième restauration au frame suivant
-  // rattrape le clamp si des sprites finissent de charger juste après.
-  window.scrollTo(window.scrollX, savedScrollY);
-  requestAnimationFrame(() => window.scrollTo(window.scrollX, savedScrollY));
-
   setupEventListeners(h);
   updateTimerDisplays();
-  } catch(err) {
-    // Voir le commentaire au début de render() : on n'atterrit ici que si
-    // quelque chose a levé une exception au lieu de la laisser planter
-    // silencieusement l'affichage. On logue le détail (utile si un jour
-    // quelqu'un peut voir la console), on prévient l'utilisateur, et on
-    // remplace la zone principale par un message récupérable plutôt que
-    // de la laisser vide — avec un bouton pour réessayer sans redémarrer
-    // toute l'application.
-    console.error('render() a échoué :', err);
-    showToast("Une erreur est survenue pendant l'affichage — réessaie ou redémarre l'app.", null);
-    const mainFallback = document.getElementById('mainArea');
-    if (mainFallback) {
-      mainFallback.innerHTML = `
-        <div class="empty-state">
-          <span class="cm">Une erreur est survenue pendant l'affichage de cette chasse.</span>
-          <div>Essaie de changer de chasse dans la liste, ou clique ci-dessous pour réessayer. Si le problème persiste, redémarre l'application.</div>
-          <button class="act primary" id="renderRetryBtn" style="margin-top:10px;">Réessayer</button>
-        </div>`;
-      const retryBtn = document.getElementById('renderRetryBtn');
-      if (retryBtn) retryBtn.onclick = () => render();
-    }
-  }
 }
 
 async function startCapture(){
@@ -3934,18 +3573,11 @@ function getVideoRect(video, overlay){
 // et les listeners globaux ne sont posés qu'une seule fois pour toute la vie
 // de la page.
 function sizeOverlay(){
-  // On dimensionne le canvas sur la boîte qui contient RÉELLEMENT la vidéo
-  // (captureCanvasWrap), pas sur .capture-stage : depuis l'ajout du zoom,
-  // .capture-stage est une fenêtre de taille fixe (overflow:auto) qui peut
-  // être plus petite que son contenu zoomé — c'est captureCanvasWrap qui a
-  // la vraie taille de la vidéo affichée (donc de l'overlay, qui doit la
-  // recouvrir en entier, y compris les parties actuellement hors-vue à
-  // cause du défilement).
-  const wrap = document.getElementById('captureCanvasWrap');
+  const stage = document.getElementById('captureStage');
   const overlay = document.getElementById('overlayCanvas');
-  if(!wrap || !overlay) return;
-  overlay.width = wrap.clientWidth;
-  overlay.height = wrap.clientHeight;
+  if(!stage || !overlay) return;
+  overlay.width = stage.clientWidth;
+  overlay.height = stage.clientHeight;
   drawOverlay();
 }
 
@@ -4032,52 +3664,6 @@ function setupOverlay(){
   drawOverlay();
 }
 
-// Zoom de l'aperçu de partage d'écran (voir le commentaire sur
-// captureZoomLevel plus haut, et sur .capture-canvas-wrap dans le CSS).
-// Rappelée à chaque render() tant que le partage est actif, comme
-// setupOverlay() : main.innerHTML reconstruit tout le DOM à chaque fois,
-// donc il faut réappliquer le zoom courant sur le wrap fraîchement recréé
-// (sinon il repartirait visuellement à 100% à chaque rencontre comptée,
-// alors que captureZoomLevel, lui, reste inchangé en mémoire).
-// Hauteur de référence de la vidéo à 100% de zoom — doit rester identique à
-// la valeur "max-height" posée en dur dans le CSS pour .capture-stage video,
-// afin que le zoom à 100% (valeur par défaut) rende EXACTEMENT comme avant
-// l'ajout du zoom (aperçu entier, letterboxé, sans barre de défilement).
-const CAPTURE_BASE_MAX_HEIGHT = 260;
-
-function applyCaptureZoom(){
-  const wrap = document.getElementById('captureCanvasWrap');
-  const video = document.getElementById('captureVideo');
-  if(!wrap) return;
-  wrap.style.width = (captureZoomLevel*100) + '%';
-  if(video) video.style.maxHeight = (CAPTURE_BASE_MAX_HEIGHT*captureZoomLevel) + 'px';
-  sizeOverlay();
-}
-
-function setupCaptureZoom(){
-  applyCaptureZoom();
-
-  const wrap = document.getElementById('captureCanvasWrap');
-  const slider = document.getElementById('captureZoomSlider');
-  if(!wrap || !slider) return;
-  const valueLabel = document.getElementById('captureZoomValue');
-  const resetBtn = document.getElementById('captureZoomResetBtn');
-
-  slider.oninput = ()=>{
-    captureZoomLevel = Number(slider.value)/100;
-    if(valueLabel) valueLabel.textContent = Math.round(captureZoomLevel*100) + '%';
-    applyCaptureZoom();
-  };
-  if(resetBtn){
-    resetBtn.onclick = ()=>{
-      captureZoomLevel = 1;
-      slider.value = '100';
-      if(valueLabel) valueLabel.textContent = '100%';
-      applyCaptureZoom();
-    };
-  }
-}
-
 function normalizeText(s){
   return String(s || '')
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
@@ -4149,7 +3735,7 @@ async function ensureDetectedPokemon(name){
   if(cleaned.length<2) return null;
 
   const types = await fetchPokemonTypes(cleaned);
-  const p={id:uid(),name:cleaned.charAt(0).toUpperCase()+cleaned.slice(1),variant:'normal',types:types,total:0,haTotal:0,sinceShiny:0,sinceForm:0,pityCurrent:0,pityMin:0,pityMax:0,pityLast:0,pityHits:0,autoAdded:true,captureRate:null,availableForms:normalizeAvailableForms(null),formPity:{},shinyResetAt:0};
+  const p={id:uid(),name:cleaned.charAt(0).toUpperCase()+cleaned.slice(1),variant:'normal',types:types,total:0,haTotal:0,sinceShiny:0,sinceForm:0,pityCurrent:0,pityMin:0,pityMax:0,pityLast:0,pityHits:0,autoAdded:true,captureRate:null,availableForms:normalizeAvailableForms(null)};
   h.pokemon.push(p);
   FORM_SHAPES.forEach(shape=>{
     const fc = h.formCycles[shape];
@@ -4327,7 +3913,6 @@ function setupEventListeners(h){
     video.srcObject = mediaStream;
     video.play().catch(()=>{});
     setupOverlay();
-    setupCaptureZoom();
   }
 
   document.querySelectorAll('.pokemon-tab').forEach(btn=>{
@@ -4958,27 +4543,27 @@ function markFormFound(p){
   if(!h || !p) return;
   const capturedShape = state.formShape; // forme active au moment du clic, figee pour le bouton "annuler" du toast
   if(!isPokemonFormEligible(p, capturedShape)){
-    showToast(`${p.name} ne possède pas la Forme ${capturedShape} — case décochée`, null);
+    showToast(`${p.name} ne possède pas la forme ${capturedShape} — case décochée`, null);
     return;
   }
   const before = JSON.parse(JSON.stringify(state.formTracker));
-  // pity de forme GLOBAL (toutes chasses confondues) : on ne sauvegarde plus
-  // que la valeur individuelle de ce Pokémon pour ce shape, à restaurer en cas
-  // d'annulation — plus besoin de snapshot par chasse.
-  const beforeFormPity = Number(p.formPity && p.formPity[capturedShape]) || 0;
-  const entry = { tracker: before, huntId: h.id, pokemonId: p.id, shape: capturedShape, beforeFormPity };
+  const beforeCycle = JSON.parse(JSON.stringify(h.formCycles[capturedShape]));
+  const entry = { tracker: before, cycle: beforeCycle, huntId: h.id };
   state.formHistory.push(entry);
   state.formUndoOrigin = null;
   state.formHistoryOrigin = null;
   registerGlobalHit(state.formTracker);
-  p.formPity = p.formPity || {};
-  p.formPity[capturedShape] = 0;
+  h.pokemon.forEach(pokemon => {
+    h.formCycles[capturedShape].pokemonStart[pokemon.id] = h.total;
+  });
+  h.formCycles[capturedShape].pokemonCycleStart[p.id] = h.total;
+  h.formCycles[capturedShape].pokemonPity[p.id] = 0;
   analysisType = 'FORME';
   saveState();
   render();
   showToast(`Forme de ${p.name} trouvée (${capturedShape}) — convergences réinitialisées`, async ()=>{
     state.formTrackers[capturedShape] = before;
-    p.formPity[capturedShape] = beforeFormPity;
+    h.formCycles[capturedShape] = beforeCycle;
     const hist = state.formHistories[capturedShape] || [];
     const idx = hist.indexOf(entry);
     if(idx !== -1) hist.splice(idx, 1);
@@ -4991,21 +4576,23 @@ function markShinyFound(p){
   const h = activeHunt();
   if(!h || !p) return;
   const before = JSON.parse(JSON.stringify(state.shinyTracker));
-  // shiny GLOBAL (toutes chasses confondues, calculé à la volée) : on
-  // sauvegarde juste l'ancien baseline de ce Pokémon pour pouvoir l'annuler.
-  const beforeShinyResetAt = Number(p.shinyResetAt) || 0;
-  const entry = { tracker: before, huntId: h.id, pokemonId: p.id, beforeShinyResetAt };
+  const beforeCycle = JSON.parse(JSON.stringify(h.shinyCycle));
+  const entry = { tracker: before, cycle: beforeCycle, huntId: h.id };
   state.shinyHistory.push(entry);
   state.shinyUndoOrigin = null;
   state.shinyHistoryOrigin = null;
   registerGlobalHit(state.shinyTracker);
-  p.shinyResetAt = Number(state.grandTotal) || 0;
+  h.pokemon.forEach(pokemon => {
+    h.shinyCycle.pokemonStart[pokemon.id] = h.total;
+  });
+  h.shinyCycle.pokemonCycleStart[p.id] = h.total;
+  h.shinyCycle.pokemonPity[p.id] = 0;
   analysisType = 'SHINY';
   saveState();
   render();
   showToast(`Shiny de ${p.name} trouvé — convergences réinitialisées`, async ()=>{
     state.shinyTracker = before;
-    p.shinyResetAt = beforeShinyResetAt;
+    h.shinyCycle = beforeCycle;
     const idx = state.shinyHistory.indexOf(entry);
     if(idx !== -1) state.shinyHistory.splice(idx, 1);
     saveState();
@@ -5020,13 +4607,19 @@ async function removePokemon(p){
     showToast('Une chasse doit garder au moins un Pokémon', null);
     return;
   }
-  // Retirer un Pokémon est une correction PUREMENT LOCALE à ce Pokémon : on ne
-  // touche plus à h.total, state.grandTotal, ni à aucun compteur de pity
-  // (global ou par catégorie de forme). Ces compteurs enregistrent le nombre
-  // réel de rencontres loguées et servent de référence PARTAGÉE à tous les
-  // autres Pokémon (voir bumpGlobalPity) — les faire varier ici ferait dériver
-  // la convergence de tout le monde à cause d'une correction sur un seul
-  // Pokémon, exactement le bug qu'on vient de corriger.
+  const oldTotal = p.total || 0;
+  if(oldTotal > 0){
+    h.total = Math.max(0, h.total - oldTotal);
+    state.grandTotal = Math.max(0, state.grandTotal - oldTotal);
+    state.shinyTracker.pityCurrent = Math.max(0, state.shinyTracker.pityCurrent - oldTotal);
+    state.formTracker.pityCurrent = Math.max(0, state.formTracker.pityCurrent - oldTotal);
+    h.pokemon.forEach(pokemon => {
+      h.shinyCycle.pokemonPity[pokemon.id] = Math.max(0, (Number(h.shinyCycle.pokemonPity[pokemon.id])||0) - oldTotal);
+      if(isPokemonFormEligible(pokemon, state.formShape)){
+        h.formCycle.pokemonPity[pokemon.id] = Math.max(0, (Number(h.formCycle.pokemonPity[pokemon.id])||0) - oldTotal);
+      }
+    });
+  }
   h.pokemon = h.pokemon.filter(x=>x.id!==p.id);
   state.activePokemonId = h.pokemon[0].id;
   saveState();
@@ -5045,12 +4638,23 @@ function modifyHaCount(pid, delta){
 
 function resetPokemon(p){
   if(!p) return;
+  const h = activeHunt();
+  const oldTotal = p.total || 0;
   const old = { total: p.total, haTotal: p.haTotal, sinceShiny: p.sinceShiny, sinceForm: p.sinceForm, pityCurrent: p.pityCurrent };
+  
+  if(h && oldTotal > 0){
+    h.total = Math.max(0, h.total - oldTotal);
+    state.grandTotal = Math.max(0, state.grandTotal - oldTotal);
+    state.shinyTracker.pityCurrent = Math.max(0, state.shinyTracker.pityCurrent - oldTotal);
+    state.formTracker.pityCurrent = Math.max(0, state.formTracker.pityCurrent - oldTotal);
+    h.pokemon.forEach(pokemon => {
+      h.shinyCycle.pokemonPity[pokemon.id] = Math.max(0, (Number(h.shinyCycle.pokemonPity[pokemon.id])||0) - oldTotal);
+      if(isPokemonFormEligible(pokemon, state.formShape)){
+        h.formCycle.pokemonPity[pokemon.id] = Math.max(0, (Number(h.formCycle.pokemonPity[pokemon.id])||0) - oldTotal);
+      }
+    });
+  }
 
-  // Reset PUREMENT LOCAL à ce Pokémon (voir commentaire de removePokemon) :
-  // on ne touche plus à h.total / state.grandTotal / aux compteurs de pity
-  // globaux ou par catégorie — ils restent l'historique réel des rencontres,
-  // partagé comme référence par tous les autres Pokémon.
   p.total = 0;
   p.haTotal = 0;
   p.sinceShiny = 0;
@@ -5064,6 +4668,18 @@ function resetPokemon(p){
     p.sinceShiny = old.sinceShiny;
     p.sinceForm = old.sinceForm;
     p.pityCurrent = old.pityCurrent;
+    if(h && oldTotal > 0){
+      h.total += oldTotal;
+      state.grandTotal += oldTotal;
+      state.shinyTracker.pityCurrent += oldTotal;
+      state.formTracker.pityCurrent += oldTotal;
+      h.pokemon.forEach(pokemon => {
+        h.shinyCycle.pokemonPity[pokemon.id] = (Number(h.shinyCycle.pokemonPity[pokemon.id])||0) + oldTotal;
+        if(isPokemonFormEligible(pokemon, state.formShape)){
+          h.formCycle.pokemonPity[pokemon.id] = (Number(h.formCycle.pokemonPity[pokemon.id])||0) + oldTotal;
+        }
+      });
+    }
     saveState();
     await render();
   });
@@ -5091,43 +4707,6 @@ const IV_ORDER = ['atk','def','spe','spa','spd','hp'];
 // et non la clé interne "spd" (Défense Spéciale / SpDef) : c'est gere par
 // les listes de variantes ci-dessous, pas par un renommage des clés.
 const IV_STAT_LABELS = { hp:'PV', atk:'Attaque', def:'Défense', spa:'Atq. Spé.', spd:'Déf. Spé.', spe:'Vitesse' };
-
-// Calcul du type de Capacité Cachée (Hidden Power) à partir des 6 IV.
-// Formule "moderne" (Génération VI+, celle utilisée par PRO où la
-// puissance est fixe à 60 et seul le type varie) : on ne regarde que le
-// bit de poids faible (pair/impair) de chaque IV, dans cet ordre précis
-// PV(1) / Attaque(2) / Défense(4) / Vitesse(8) / Atq.Spé(16) / Déf.Spé(32)
-// — l'ordre des poids est celui de la formule officielle, PAS l'ordre
-// d'affichage des stats à l'écran. Source : Bulbapedia, "Hidden Power
-// (move)/Calculation" (formule Génération III onward, simplifiée en Gen VI
-// avec puissance fixe) ; confirmé pour PRO via le wiki PRO (Hidden Power :
-// puissance fixe 60, type dépendant des IV, jamais Normal ni Fée).
-const HIDDEN_POWER_TYPES = ['fighting','flying','poison','ground','rock','bug','ghost','steel','fire','water','grass','electric','psychic','ice','dragon','dark'];
-const HIDDEN_POWER_TYPE_LABELS_FR = {
-  fighting:'Combat', flying:'Vol', poison:'Poison', ground:'Sol', rock:'Roche', bug:'Insecte',
-  ghost:'Spectre', steel:'Acier', fire:'Feu', water:'Eau', grass:'Plante', electric:'Électrik',
-  psychic:'Psy', ice:'Glace', dragon:'Dragon', dark:'Ténèbres'
-};
-function computeHiddenPowerType(values){
-  if(!values) return null;
-  const bit=(v)=> (Math.abs(Number(v)||0) % 2);
-  const a=bit(values.hp), b=bit(values.atk), c=bit(values.def), d=bit(values.spe), e=bit(values.spa), f=bit(values.spd);
-  const idx=Math.floor(((a + 2*b + 4*c + 8*d + 16*e + 32*f) * 15) / 63);
-  return HIDDEN_POWER_TYPES[Math.max(0, Math.min(15, idx))];
-}
-function hiddenPowerBadgeHtml(hpType){
-  if(!hpType) return '';
-  // Affiché en anglais (comme les badges de type des Pokémon eux-mêmes,
-  // ex. type-fire -> "FIRE" en majuscules via CSS) plutôt qu'avec le libellé
-  // français de HIDDEN_POWER_TYPE_LABELS_FR : quatre des seize noms français
-  // (Vol, Poison, Sol, Dragon) sont des mots trop courts/ambigus pour servir
-  // de clé de traduction sans risquer de corrompre du texte sans rapport
-  // ailleurs dans l'app (ex. "Volcanion", "Poison Heal", "Solaceon",
-  // "Dragons Shrine") — cette approche évite le problème à la racine et
-  // reste cohérente avec le reste de l'app, où les noms de type ne sont
-  // jamais traduits.
-  return `<span class="type-badge type-${hpType}" title="Capacité Cachée — type calculé à partir des 6 IV (puissance fixe 60)">${escapeHtml(hpType)}</span>`;
-}
 
 // Formes "pleines" (nom complet, FR + EN), comparees par similarite floue.
 const IV_LABEL_VARIANTS = {
@@ -5534,16 +5113,6 @@ function renderIvAnalysis(result){
   document.getElementById('ivTotalBoxWrap').innerHTML =
     `<div class="iv-total-box"><span class="lbl">Total IV</span><span class="val">${result.allFound ? result.total : '\u2014'}</span></div>`;
 
-  const hpWrap=document.getElementById('ivHiddenPowerWrap');
-  if(hpWrap){
-    if(result.allFound){
-      const hpType=computeHiddenPowerType(result.values);
-      hpWrap.innerHTML = `<div class="iv-total-box"><span class="lbl">Capacit\u00e9 Cach\u00e9e</span><span class="val">${hiddenPowerBadgeHtml(hpType)}</span></div>`;
-    } else {
-      hpWrap.innerHTML = '';
-    }
-  }
-
   const hasManual=IV_ORDER.some(k=>result.sources[k]==='manual');
   let confClass='ok', confMsg="\u2713 6/6 valeurs detectees avec confiance.";
   if(!result.allFound){
@@ -5580,7 +5149,6 @@ function saveIvResultToHistory(auto){
     ts: Date.now(),
     values,
     total: ivCurrentResult.total,
-    hpType: computeHiddenPowerType(values),
     thumb: ivOriginalCanvas ? makeIvThumb(ivOriginalCanvas) : null,
     auto: !!auto
   };
@@ -5623,11 +5191,10 @@ function renderIvHistory(){
     const thumbHtml = entry.thumb
       ? `<img class="thumb" src="${entry.thumb}" alt="miniature">`
       : `<div class="thumb none">?</div>`;
-    const hpType = entry.hpType || computeHiddenPowerType(entry.values);
     return `<div class="iv-history-item" data-id="${entry.id}">
       ${thumbHtml}
       <div class="meta">
-        <div class="row1"><span class="idx">#${num}</span><span style="display:flex;align-items:center;gap:6px;"><span class="tot">Total : ${entry.total}</span>${hiddenPowerBadgeHtml(hpType)}</span></div>
+        <div class="row1"><span class="idx">#${num}</span><span class="tot">Total : ${entry.total}</span></div>
         <div class="row2">${escapeHtml(line)}</div>
         <div class="row3">${escapeHtml(dateStr)}</div>
       </div>
@@ -5659,8 +5226,6 @@ function resetIvResultUI(){
   if(list) list.innerHTML = `<div class="iv-empty">Analyse en cours...</div>`;
   const totalWrap=document.getElementById('ivTotalBoxWrap');
   if(totalWrap) totalWrap.innerHTML='';
-  const hpWrap=document.getElementById('ivHiddenPowerWrap');
-  if(hpWrap) hpWrap.innerHTML='';
   const confWrap=document.getElementById('ivConfidenceWrap');
   if(confWrap) confWrap.innerHTML='';
   const saveRow=document.getElementById('ivSaveRow');
@@ -5757,8 +5322,6 @@ function clearIvCapture(){
   if(list) list.innerHTML = `<div class="iv-empty">Colle une capture pour lancer l'analyse.</div>`;
   const totalWrap=document.getElementById('ivTotalBoxWrap');
   if(totalWrap) totalWrap.innerHTML='';
-  const hpWrap=document.getElementById('ivHiddenPowerWrap');
-  if(hpWrap) hpWrap.innerHTML='';
   const confWrap=document.getElementById('ivConfidenceWrap');
   if(confWrap) confWrap.innerHTML='';
   const saveRow=document.getElementById('ivSaveRow');
@@ -5883,30 +5446,6 @@ function setupWindowControls(){
     prefs.alwaysOnTop = aotToggle.checked;
     window.windowControls.setAlwaysOnTop(prefs.alwaysOnTop);
     savePrefs();
-  });
-
-  // --- Pause du "toujours au premier plan" pendant qu'un <select> natif
-  // est ouvert (voir nativeSelectOpen dans main.js) : sinon, tant que
-  // "toujours au premier plan" est actif, les listes déroulantes natives
-  // (ex: "Forme / événement" dans la colonne de gauche, le sélecteur du
-  // graphique de convergence) se refermaient instantanément dès l'ouverture
-  // — main.js force régulièrement notre fenêtre au premier plan
-  // (moveTop()/setAlwaysOnTop), ce qui vole l'activation à la popup du
-  // <select> (une fenêtre système séparée) et la ferme aussitôt sous
-  // Windows. Un navigateur ne notifie pas explicitement l'ouverture/
-  // fermeture d'un <select>, donc on approxime avec focus/blur (délégués
-  // sur document, pour couvrir aussi les <select> recréés par render()) :
-  // le <select> a le focus pendant toute la durée où sa liste peut être
-  // ouverte, et le perd à la sélection d'une option ou à la fermeture.
-  document.addEventListener('focusin', (e) => {
-    if (e.target && e.target.tagName === 'SELECT') {
-      try { window.windowControls.setSelectOpen(true); } catch(err){}
-    }
-  });
-  document.addEventListener('focusout', (e) => {
-    if (e.target && e.target.tagName === 'SELECT') {
-      try { window.windowControls.setSelectOpen(false); } catch(err){}
-    }
   });
 
   // --- Transparence ---
@@ -6037,109 +5576,6 @@ function closeAllDropdownsExcept(exceptWrapId){
     if(wrap.id !== exceptWrapId) wrap.classList.remove('open');
   });
 }
-
-/* ============ POSITIONNEMENT AUTO DES PANNEAUX DÉROULANTS ============
-   .boss-dropdown-panel est en position:fixed (voir le commentaire sur cette
-   règle dans le CSS) : sa position n'est donc PLUS calculée automatiquement
-   par le navigateur par rapport à son bouton (comme le ferait un
-   position:absolute) — il faut la calculer nous-mêmes en JS à partir de la
-   position réelle du bouton à l'écran (getBoundingClientRect), à chaque
-   ouverture. Cette fonction fait ça, ET corrige en plus le débordement
-   horizontal (un panneau proche du bord droit de la fenêtre s'ancre depuis
-   la droite plutôt que de déborder hors du cadre) ainsi que, désormais, le
-   débordement vertical bas (fenêtre peu haute : le panneau remonte au lieu
-   de dépasser en bas de l'écran).
-   Générique : s'applique à TOUS les .boss-dropdown-wrap (Boss, Méga
-   Gemmes, Quêtes, Excavations, Daily Quest, Récolte, Donjon, Membership,
-   Transit Pass, Safari, Langue), sans avoir à toucher chacun de leurs
-   gestionnaires de clic individuels. */
-function repositionDropdownPanel(wrap){
-  const btn = wrap.querySelector(':scope > .boss-dropdown-btn');
-  const panel = wrap.querySelector(':scope > .boss-dropdown-panel');
-  if (!btn || !panel) return;
-  const margin = 8;
-  const btnRect = btn.getBoundingClientRect();
-  if (btnRect.width === 0 && btnRect.height === 0) return; // bouton pas encore affiché
-
-  const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
-  const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
-
-  // Largeur réelle du panneau : on la lit sur le panneau lui-même (fixée en
-  // CSS à 360px, ou 270px pour Récolte/Donjon via un style inline — voir
-  // leur HTML), donc on se base sur son offsetWidth plutôt que de la
-  // deviner ici.
-  const panelWidth = panel.offsetWidth || 360;
-
-  // Ancrage horizontal par défaut : bord gauche du panneau aligné sur le
-  // bord gauche du bouton (comme avant, avec left:0 avant ce correctif).
-  let left = btnRect.left;
-  if (left + panelWidth > viewportWidth - margin) {
-    // Déborde à droite : on ancre plutôt le bord DROIT du panneau sur le
-    // bord droit du bouton.
-    left = btnRect.right - panelWidth;
-  }
-  if (left < margin) {
-    // Ne tient toujours pas (fenêtre trop étroite pour la largeur du
-    // panneau) : on le cale au plus près du bord gauche visible.
-    left = margin;
-  }
-
-  // Ancrage vertical par défaut : juste sous le bouton (comme le
-  // "top:calc(100% + 8px)" d'avant ce correctif).
-  let top = btnRect.bottom + margin;
-  const panelMaxHeight = Math.min(panel.offsetHeight || 0, viewportHeight * 0.7);
-  if (top + panelMaxHeight > viewportHeight - margin) {
-    // Ne tient pas en dessous (fenêtre peu haute, ou bouton proche du bas) :
-    // on remonte le panneau juste au-dessus du bouton s'il y a la place,
-    // sinon on le colle en haut de la fenêtre.
-    const aboveTop = btnRect.top - margin - panelMaxHeight;
-    top = aboveTop >= margin ? aboveTop : margin;
-  }
-
-  panel.style.left = left + 'px';
-  panel.style.top = top + 'px';
-}
-
-function repositionOpenDropdownPanels(){
-  document.querySelectorAll('.boss-dropdown-wrap.open').forEach(repositionDropdownPanel);
-}
-
-function initDropdownAutoPosition(){
-  // Un panneau nouvellement ouvert obtient la classe "open" de façon
-  // synchrone dans le gestionnaire de clic du bouton correspondant (voir
-  // les différentes fonctions setupXDropdown / setupLangDropdown) ; on
-  // observe donc les changements de classe pour repositionner le panneau
-  // juste après, sans avoir à modifier chacun de ces gestionnaires.
-  //
-  // IMPORTANT : on observe document.body avec subtree:true, PAS chaque
-  // .boss-dropdown-wrap individuellement. Les menus Membership/Transit
-  // Pass/Safari vivent dans #mainArea, dont le contenu est régénéré par
-  // main.innerHTML = ... à chaque appel de render() (utilisé 80+ fois dans
-  // ce fichier, à chaque changement d'état) : ça détruit les anciens noeuds
-  // .boss-dropdown-wrap et en recrée de nouveaux. Un observer attaché aux
-  // wraps d'origine (via observer.observe(wrap,...) sur chaque élément
-  // trouvé au chargement) perdait donc le suivi de ces 3 menus dès le
-  // premier render() suivant : leurs panneaux gardaient alors la position
-  // par défaut du CSS (position:fixed;top:0;left:0), d'où le bug "menu qui
-  // apparaît en haut à gauche, derrière la barre". Observer document.body
-  // en profondeur couvre aussi les wraps recréés après coup, sans avoir à
-  // ré-attacher quoi que ce soit après chaque render().
-  const observer = new MutationObserver((mutations)=>{
-    mutations.forEach(m=>{
-      const wrap = m.target;
-      if (wrap.nodeType === 1 && wrap.classList && wrap.classList.contains('boss-dropdown-wrap') && wrap.classList.contains('open')) {
-        repositionDropdownPanel(wrap);
-      }
-    });
-  });
-  observer.observe(document.body, { attributes:true, attributeFilter:['class'], subtree:true });
-  // Un redimensionnement de la fenêtre peut faire déborder un panneau déjà
-  // ouvert (ou au contraire lui permettre de reprendre sa position par
-  // défaut) : on recalcule dans ce cas.
-  window.addEventListener('resize', repositionOpenDropdownPanels);
-}
-initDropdownAutoPosition();
-/* ============ FIN POSITIONNEMENT AUTO DES PANNEAUX DÉROULANTS ============ */
 
 function toggleBossCheck(bossName, days){
   if(!state.bossCooldowns) state.bossCooldowns = {};
@@ -7688,7 +7124,7 @@ const LANG_KEY = 'pokedexHuntTracker_lang_v1';
 let currentLang = 'fr';
 try {
   const savedLang = localStorage.getItem(LANG_KEY);
-  if (savedLang === 'en' || savedLang === 'fr' || savedLang === 'ko') currentLang = savedLang;
+  if (savedLang === 'en' || savedLang === 'fr') currentLang = savedLang;
 } catch(e){}
 
 const TRANSLATIONS_FR_EN = {
@@ -7747,15 +7183,6 @@ const TRANSLATIONS_FR_EN = {
   "▾ Réduire": "▾ Collapse",
   "▴ Agrandir": "▴ Expand",
   "Revenir à l'affichage complet": "Return to full view",
-  "Toujours au premier plan": "Always on top",
-  "Transparence": "Transparency",
-  "Zone": "Zone",
-  "Modifier le pseudo": "Edit nickname",
-  "Modifier la zone": "Edit zone",
-  "Impossible de sauvegarder automatiquement — utilise Exporter": "Unable to save automatically — use Export",
-  "Fichier de sauvegarde invalide": "Invalid backup file",
-  "Aucun historique disponible": "No history available",
-  "aucune chasse pour l'instant": "no hunts yet",
   "Afficher le panneau IV Scanner": "Show the IV Scanner panel",
   "Réduire le panneau IV Scanner": "Collapse the IV Scanner panel",
   "JOURNAL DES CHASSES": "HUNT LOG",
@@ -7763,9 +7190,10 @@ const TRANSLATIONS_FR_EN = {
   "Nouvelle chasse": "New hunt",
   "form alternative": "alternate form",
   "Form Alternative": "Alternate Form",
+  "Événement en cours": "Event active",
   "Variante": "Variant",
-  "depuis Shiny": "since Shiny",
-  "depuis Form Alternative": "since Alternate Form",
+  "depuis shiny": "since shiny",
+  "depuis form alternative": "since alternate form",
   "trouvés": "found",
   "trouvées": "found",
   "depuis le dernier": "since last",
@@ -7773,39 +7201,27 @@ const TRANSLATIONS_FR_EN = {
   "dernier :": "last:",
   "taux ": "rate ",
   " · moyenne ": " · average ",
-  "taux de rencontre": "encounter rate",
-  "pseudo Pity — intervalle entre deux rencontres": "pseudo Pity — interval between two encounters",
-  "Dernier intervalle : ": "Last interval: ",
-  "actuel": "current",
-  "minimum": "minimum",
-  "maximum": "maximum",
-  "occurrence": "occurrence",
-  "occurrences": "occurrences",
-  "Forme Alternative": "Alternate Form",
-  " au total)": " in total)",
-  "Total : ": "Total: ",
-  "Rencontres comptées toutes chasses confondues pendant que cette catégorie était sélectionnée — référence commune pour la convergence des Pokémon jamais trouvés dans cette Forme.": "Encounters counted across all hunts while this category was selected — shared reference for the convergence of Pokémon never found in this form.",
   "Retour en arrière": "Undo",
   "Forme / événement": "Form / event",
   "Cliquer pour corriger": "Click to edit",
-  "Corriger le total Shiny": "Edit Shiny total",
-  "Corriger \"depuis le dernier\" (Shiny)": "Edit \"since last\" (Shiny)",
-  "Corriger le minimum (Shiny)": "Edit minimum (Shiny)",
-  "Corriger le maximum (Shiny)": "Edit maximum (Shiny)",
-  "Corriger le dernier intervalle (Shiny)": "Edit last interval (Shiny)",
-  "Corriger le total Forme Alternative": "Edit Alternate Form total",
-  "Corriger \"depuis la dernière\" (Forme)": "Edit \"since last\" (Form)",
-  "Corriger le minimum (Forme)": "Edit minimum (Form)",
-  "Corriger le maximum (Forme)": "Edit maximum (Form)",
-  "Corriger le dernier intervalle (Forme)": "Edit last interval (Form)",
+  "Corriger le total shiny": "Edit shiny total",
+  "Corriger \"depuis le dernier\" (shiny)": "Edit \"since last\" (shiny)",
+  "Corriger le minimum (shiny)": "Edit minimum (shiny)",
+  "Corriger le maximum (shiny)": "Edit maximum (shiny)",
+  "Corriger le dernier intervalle (shiny)": "Edit last interval (shiny)",
+  "Corriger le total forme alternative": "Edit alternate form total",
+  "Corriger \"depuis la dernière\" (forme)": "Edit \"since last\" (form)",
+  "Corriger le minimum (forme)": "Edit minimum (form)",
+  "Corriger le maximum (forme)": "Edit maximum (form)",
+  "Corriger le dernier intervalle (forme)": "Edit last interval (form)",
   "Corriger le total all-time": "Edit all-time total",
   "Nouvelle valeur": "New value",
   "Valeur invalide — nombre entier positif attendu": "Invalid value — a positive whole number is expected",
   "Le total all-time est déjà à 0": "The all-time total is already 0",
   "Total all-time réinitialisé (était": "All-time total reset (was",
   "Aucun retour en arrière possible": "Nothing to undo",
-  "Retour en arrière effectué (Shiny)": "Undo complete (Shiny)",
-  "Retour en arrière effectué (Form Alternative)": "Undo complete (Alternate Form)",
+  "Retour en arrière effectué (shiny)": "Undo complete (shiny)",
+  "Retour en arrière effectué (form alternative)": "Undo complete (alternate form)",
   "Données sauvegardées illisibles": "Saved data unreadable",
   "Sauvegarde exportée": "Backup exported",
   "Données importées avec succès": "Data imported successfully",
@@ -7816,41 +7232,6 @@ const TRANSLATIONS_FR_EN = {
   "Colle une capture pour lancer l'analyse.": "Paste a screenshot to run the analysis.",
   "Aucune analyse enregistrée pour l'instant.": "No analysis saved yet.",
   "Aucune analyse enregistree pour l'instant.": "No analysis saved yet.",
-  "Total IV": "Total IV",
-  "Modifier PV": "Edit HP",
-  "Modifier Attaque": "Edit Attack",
-  "Modifier Défense": "Edit Defense",
-  "Modifier Atq. Spé.": "Edit Sp. Atk.",
-  "Modifier Déf. Spé.": "Edit Sp. Def.",
-  "Modifier Vitesse": "Edit Speed",
-  "Valeur IV (0 a 31)": "IV value (0 to 31)",
-  "Valeur invalide (0 a 31 attendu)": "Invalid value (0 to 31 expected)",
-  "✓ 6/6 valeurs detectees avec confiance.": "✓ 6/6 values detected with confidence.",
-  "Valeurs manquantes : ": "Missing values: ",
-  ". Clique sur une ligne pour la saisir, ou relance l'analyse.": ". Click a row to enter it, or re-run the analysis.",
-  "Toutes les valeurs sont renseignees, mais certaines proviennent d'une estimation de position — verifie-les avant d'enregistrer.": "All values are filled in, but some come from a position estimate — check them before saving.",
-  "6/6 valeurs renseignees (dont une saisie manuelle).": "6/6 values filled in (including one manual entry).",
-  "Analyse enregistree — Total IV : ": "Analysis saved — Total IV: ",
-  "Analyse en cours...": "Analysis in progress...",
-  "Echec de l'analyse. Utilise \"Relancer l'analyse\".": "Analysis failed. Use \"Re-run analysis\".",
-  "Entree supprimee": "Entry deleted",
-  "OCR : demarrage...": "OCR: starting...",
-  "Aucun texte detecte sur l'image — verifie la capture": "No text detected on the image — check the screenshot",
-  "Analyse terminee — 6/6 IV detectees": "Analysis complete — 6/6 IVs detected",
-  "Analyse terminee — verifie les valeurs avant d'enregistrer": "Analysis complete — check the values before saving",
-  "Analyse terminee — certaines valeurs restent a renseigner": "Analysis complete — some values still need to be filled in",
-  "Erreur OCR — verifie ta connexion puis relance l'analyse": "OCR error — check your connection then re-run the analysis",
-  "Colle d'abord une capture (Ctrl+V)": "First paste a screenshot (Ctrl+V)",
-  "Le presse-papiers ne contient pas d'image": "The clipboard doesn't contain an image",
-  "Image illisible": "Unreadable image",
-  "Erreur de lecture du fichier colle": "Error reading the pasted file",
-  "Image invalide ou vide": "Invalid or empty image",
-  "Le fichier depose n'est pas une image": "The dropped file is not an image",
-  "Taille pinceau": "Brush size",
-  "Dessine un rectangle sur l'image puis": "Draw a rectangle on the image then",
-  "Appliquer le rognage": "Apply crop",
-  "Total accumule (": "Total accumulated (",
-  " analyses)": " analyses)",
   "Appuie sur": "Press",
   "Impr. écran": "Print Screen",
   ", sélectionne la zone,": ", select the area,",
@@ -7905,7 +7286,7 @@ const TRANSLATIONS_FR_EN = {
   "Forme global :": "Overall form:",
   "graphique": "chart",
   "graphique masqué": "chart hidden",
-  "n'a pas la Forme": "does not have the",
+  "n'a pas la forme": "does not have the",
   "— graphique gelé": "— chart frozen",
   "détails": "details",
   "détails masqués": "details hidden",
@@ -7920,9 +7301,9 @@ const TRANSLATIONS_FR_EN = {
   "Probabilité de rencontre de": "Encounter probability of",
   "ce Pokémon": "this Pokémon",
   "global :": "overall:",
-  "Convergence Forme Pokémon (": "Pokémon-form convergence (",
+  "Convergence forme Pokémon (": "Pokémon-form convergence (",
   "rencontres depuis le dernier reset de": "encounters since the last reset of",
-  "Convergence Forme global (": "Overall-form convergence (",
+  "Convergence forme global (": "Overall-form convergence (",
   "rencontres depuis le dernier reset du cycle": "encounters since the last cycle reset",
   "Statut :": "Status:",
   "Très proche du seuil": "Very close to the threshold",
@@ -7935,30 +7316,12 @@ const TRANSLATIONS_FR_EN = {
   "Sélectionne un Pokémon": "Select a Pokémon",
   "rencontres de ce Pokémon": "encounters of this Pokémon",
   "H.A (Talent Caché)": "HA (Hidden Ability)",
-  "Capacité Cachée": "Hidden Power",
-  "Capacité Cachée — type calculé à partir des 6 IV (puissance fixe 60)": "Hidden Power — type calculated from the 6 IVs (fixed power 60)",
-  "Combat": "fighting",
-  "Roche": "rock",
-  "Insecte": "bug",
-  "Spectre": "ghost",
-  "Acier": "steel",
-  "Feu": "fire",
-  "Eau": "water",
-  "Plante": "grass",
-  "Électrik": "electric",
-  "Psy": "psychic",
-  "Glace": "ice",
-  "Ténèbres": "dark",
-  "Retirer": "Remove",
-  "icone avatar shop": "shop avatar icon",
-  "Supprimer": "Delete",
-  "miniature": "thumbnail",
   "Forme trouvée !": "Form found!",
   "Shiny trouvé !": "Shiny found!",
   "Reset ce Pokémon": "Reset this Pokémon",
   "rencontres": "encounters",
   "Formes possédées par": "Forms available for",
-  "— décocher une Forme la fige (statistiques gelées) pour ce Pokémon": "— unchecking a form freezes it (stats frozen) for this Pokémon",
+  "— décocher une forme la fige (statistiques gelées) pour ce Pokémon": "— unchecking a form freezes it (stats frozen) for this Pokémon",
   "— indisponible pour ce Pokémon (gelé)": "— unavailable for this Pokémon (frozen)",
   "Nature(s) recommandée(s) :": "Recommended nature(s):",
   "Nature(s) des sets compétitifs Génération 9 (Smogon / StrategyDex) — utile pour choisir ton Pokémon Synchronize afin de cibler cette nature en rencontre.": "Nature(s) from Generation 9 competitive sets (Smogon / StrategyDex) — useful for choosing your Synchronize Pokémon to target this nature while hunting.",
@@ -8006,7 +7369,7 @@ const TRANSLATIONS_FR_EN = {
   "Rien à annuler": "Nothing to undo",
   "Une chasse doit garder au moins un Pokémon": "A hunt must keep at least one Pokémon",
   "supprimer": "delete",
-  "ne possède pas la Forme": "does not have the",
+  "ne possède pas la forme": "does not have the",
   "— case décochée": "— box unchecked",
   "Forme de": "Form of",
   "trouvée (": "found (",
@@ -8038,455 +7401,57 @@ const TRANSLATIONS_FR_EN = {
   "Motisec Tondo": "Rotom Mow",
   "Shaymin (Ciel)": "Shaymin (Sky)",
   "Talent/nature basé sur le set compétitif de": "Ability/nature based on the competitive set of",
-  "; vérifie le talent propre à cette Forme si elle possède un set LC/NFE spécifique.": "; check the ability specific to this form if it has its own LC/NFE set.",
-  "Talent réel de ce Pokémon ; association nature/rôle estimée à partir de ses statistiques de base (pas un set Smogon vérifié).": "Real ability of this Pokémon; nature/role pairing estimated from its base stats (not a verified Smogon set).",
-  "Une erreur est survenue pendant l'affichage — réessaie ou redémarre l'app.": "Something went wrong while displaying this — try again or restart the app.",
-  "Une erreur est survenue pendant l'affichage de cette chasse.": "Something went wrong while displaying this hunt.",
-  "Essaie de changer de chasse dans la liste, ou clique ci-dessous pour réessayer. Si le problème persiste, redémarre l'application.": "Try switching to a different hunt in the list, or click below to try again. If the problem persists, restart the app.",
-  "Réessayer": "Try again"
+  "; vérifie le talent propre à cette forme si elle possède un set LC/NFE spécifique.": "; check the ability specific to this form if it has its own LC/NFE set.",
+  "Talent réel de ce Pokémon ; association nature/rôle estimée à partir de ses statistiques de base (pas un set Smogon vérifié).": "Real ability of this Pokémon; nature/role pairing estimated from its base stats (not a verified Smogon set)."
 };
 
-const TRANSLATIONS_FR_KO = {
-  "Méga Gemmes": "메가스톤",
-  "Quêtes": "퀘스트",
-  "Récolte": "채집",
-  "Coche un site juste après l'avoir récolté : le cooldown se lance et la case se décoche seule quand il redevient dispo.": "채집한 직후에 사이트를 체크하세요: 쿨다운이 시작되고, 다시 이용 가능해지면 체크박스가 자동으로 해제됩니다.",
-  "Donjon": "던전",
-  "Coche un donjon une fois fait : il se décoche seul au reset du serveur, minuit GMT+0 — 02h00 en France (heure d'été).": "던전을 완료하면 체크하세요: 서버 리셋 시(GMT+0 자정 — 프랑스 서머타임 기준 오전 2시) 자동으로 체크가 해제됩니다.",
-  "Ouvrir la page du donjon (PRO Wiki)": "던전 페이지 열기 (PRO 위키)",
-  "Reset serveur — un donjon est de nouveau disponible": "서버 리셋 — 던전을 다시 이용할 수 있습니다",
-  "Ouvrir la page (PRO Wiki)": "페이지 열기 (PRO 위키)",
-  "Cooldown terminé — un site de récolte est de nouveau disponible": "쿨다운 종료 — 채집 사이트를 다시 이용할 수 있습니다",
-  "Rechercher un boss...": "보스 검색...",
-  "Rechercher une méga gemme...": "메가스톤 검색...",
-  "Rechercher une quête...": "퀘스트 검색...",
-  "Rechercher un site...": "사이트 검색...",
-  "Rechercher une daily...": "데일리 검색...",
-  "Coche un boss juste après l'avoir combattu : le cooldown se calcule automatiquement et la case se décoche seule quand il redevient dispo.": "보스와 싸운 직후에 체크하세요: 쿨다운이 자동으로 계산되고, 다시 이용 가능해지면 체크박스가 자동으로 해제됩니다.",
-  "Coche une méga gemme une fois sa quête terminée. Clique sur son nom pour ouvrir la page de la quête (PRO Wiki) dans un nouvel onglet.": "퀘스트를 완료하면 메가스톤을 체크하세요. 이름을 클릭하면 새 탭에서 퀘스트 페이지(PRO 위키)가 열립니다.",
-  "Coche une quête une fois terminée. Clique sur son nom pour ouvrir la page de la quête (PRO Wiki) dans un nouvel onglet.": "퀘스트를 완료하면 체크하세요. 이름을 클릭하면 새 탭에서 퀘스트 페이지(PRO 위키)가 열립니다.",
-  "Coche un site juste après l'avoir excavé (rochers cassés) : un cooldown de 20h se lance et la case se décoche seule quand le site redevient dispo.": "바위를 깬 직후에 사이트를 체크하세요: 20시간 쿨다운이 시작되고, 다시 이용 가능해지면 체크박스가 자동으로 해제됩니다.",
-  "Coche une daily une fois faite : elle se décoche seule au reset du serveur, minuit GMT+0 — 02h00 en France (heure d'été).": "데일리를 완료하면 체크하세요: 서버 리셋 시(GMT+0 자정 — 프랑스 서머타임 기준 오전 2시) 자동으로 체크가 해제됩니다.",
-  "Coche ton abonnement en cours : la case se décoche automatiquement à la fin de sa durée (15/30/60 jours).": "현재 사용 중인 멤버십을 체크하세요: 기간(15/30/60일)이 끝나면 체크박스가 자동으로 해제됩니다.",
-  "Coche ton Transit Pass en cours : la case se décoche automatiquement à la fin de sa durée (7/14/21/28/30 jours).": "현재 사용 중인 트랜짓 패스를 체크하세요: 기간(7/14/21/28/30일)이 끝나면 체크박스가 자동으로 해제됩니다.",
-  "Coche ton pass Safari en cours : la case se décoche automatiquement à la fin de sa durée (24h).": "현재 사용 중인 사파리 패스를 체크하세요: 기간(24시간)이 끝나면 체크박스가 자동으로 해제됩니다.",
-  "Ouvrir la page Safari Zones (PRO Wiki)": "사파리 존 페이지 열기 (PRO 위키)",
-  "Ton pass Safari vient d'expirer": "사파리 패스가 방금 만료되었습니다",
-  "Ouvrir la page Excavation (PRO Wiki)": "발굴 페이지 열기 (PRO 위키)",
-  "Ouvrir la page Membership (PRO Wiki)": "멤버십 페이지 열기 (PRO 위키)",
-  "Ouvrir la page Transit Pass (PRO Wiki)": "트랜짓 패스 페이지 열기 (PRO 위키)",
-  "Ouvrir la page de la daily (PRO Wiki)": "데일리 페이지 열기 (PRO 위키)",
-  "Ouvrir la page du boss (PRO Wiki)": "보스 페이지 열기 (PRO 위키)",
-  "Ouvre la page de la quête": "퀘스트 페이지 열기",
-  "Aucun boss ne correspond à la recherche.": "검색과 일치하는 보스가 없습니다.",
-  "Aucune méga gemme ne correspond à la recherche.": "검색과 일치하는 메가스톤이 없습니다.",
-  "Aucune quête ne correspond à la recherche.": "검색과 일치하는 퀘스트가 없습니다.",
-  "Aucun site ne correspond à la recherche.": "검색과 일치하는 사이트가 없습니다.",
-  "Aucune daily ne correspond à la recherche.": "검색과 일치하는 데일리가 없습니다.",
-  "Cooldown terminé — un boss est de nouveau disponible": "쿨다운 종료 — 보스를 다시 이용할 수 있습니다",
-  "Cooldown terminé — un site d'excavation est de nouveau disponible": "쿨다운 종료 — 발굴 사이트를 다시 이용할 수 있습니다",
-  "Ton Membership vient d'expirer": "멤버십이 방금 만료되었습니다",
-  "Ton Transit Pass vient d'expirer": "트랜짓 패스가 방금 만료되었습니다",
-  "prêt": "준비 완료",
-  "minuit GMT+0": "GMT+0 자정",
-  "Sites de base (Permis Archéologique)": "기본 사이트 (고고학 허가증)",
-  "Sites à débloquer (Points de Découverte)": "해금 가능한 사이트 (발견 포인트)",
-  "Route 111 (Désert)": "111번도로 (사막)",
-  "Route 124, ouest de Mossdeep — 6000 DP": "124번도로, 모스데프 서쪽 — 6000 DP",
-  "Route 113, est de Fallarbor — 10000 DP": "113번도로, 팔라보 동쪽 — 10000 DP",
-  "Sinnoh (accès)": "신오 (접근)",
-  "Multirégional / Autres": "다지역 / 기타",
-  "Garder la fenêtre au-dessus de toutes les autres": "창을 항상 다른 창 위에 표시",
-  "Rendre la fenêtre transparente (utile pour regarder une vidéo en dessous)": "창을 투명하게 만들기 (아래 영상을 볼 때 유용함)",
-  "Réduire l'app en petit widget flottant": "앱을 작은 플로팅 위젯으로 축소",
-  "▾ Réduire": "▾ 축소",
-  "▴ Agrandir": "▴ 확대",
-  "Revenir à l'affichage complet": "전체 화면으로 돌아가기",
-  "Toujours au premier plan": "항상 위에 표시",
-  "Transparence": "투명도",
-  "Zone": "구역",
-  "Modifier le pseudo": "닉네임 수정",
-  "Modifier la zone": "구역 수정",
-  "Impossible de sauvegarder automatiquement — utilise Exporter": "자동으로 저장할 수 없습니다 — 내보내기를 사용하세요",
-  "Fichier de sauvegarde invalide": "잘못된 백업 파일입니다",
-  "Aucun historique disponible": "이용 가능한 기록이 없습니다",
-  "aucune chasse pour l'instant": "아직 사냥이 없습니다",
-  "Afficher le panneau IV Scanner": "개체값 스캐너 패널 표시",
-  "Réduire le panneau IV Scanner": "개체값 스캐너 패널 축소",
-  "JOURNAL DES CHASSES": "사냥 기록",
-  "+ nouvelle chasse": "+ 새 사냥",
-  "Nouvelle chasse": "새 사냥",
-  "form alternative": "다른 폼",
-  "Form Alternative": "다른 폼",
-  "Variante": "변형",
-  "depuis Shiny": "색다른 이후",
-  "depuis Form Alternative": "다른 폼 이후",
-  "trouvés": "발견",
-  "trouvées": "발견",
-  "depuis le dernier": "마지막 이후",
-  "depuis la dernière": "마지막 이후",
-  "dernier :": "마지막:",
-  "taux ": "비율 ",
-  " · moyenne ": " · 평균 ",
-  "taux de rencontre": "조우율",
-  "pseudo Pity — intervalle entre deux rencontres": "유사 피티 — 두 조우 사이의 간격",
-  "Dernier intervalle : ": "마지막 간격: ",
-  "actuel": "현재",
-  "minimum": "최소",
-  "maximum": "최대",
-  "occurrence": "회",
-  "occurrences": "회",
-  "Forme Alternative": "다른 폼",
-  " au total)": " 총)",
-  "Total : ": "총합: ",
-  "Rencontres comptées toutes chasses confondues pendant que cette catégorie était sélectionnée — référence commune pour la convergence des Pokémon jamais trouvés dans cette Forme.": "이 카테고리가 선택되어 있는 동안 모든 사냥에서 집계된 조우 수 — 이 폼에서 아직 발견되지 않은 포켓몬의 수렴 계산에 사용되는 공통 기준입니다.",
-  "Retour en arrière": "실행 취소",
-  "Forme / événement": "폼 / 이벤트",
-  "Cliquer pour corriger": "클릭해서 수정",
-  "Corriger le total Shiny": "색다른 총합 수정",
-  "Corriger \"depuis le dernier\" (Shiny)": "\"마지막 이후\" 수정 (색다른)",
-  "Corriger le minimum (Shiny)": "최솟값 수정 (색다른)",
-  "Corriger le maximum (Shiny)": "최댓값 수정 (색다른)",
-  "Corriger le dernier intervalle (Shiny)": "마지막 간격 수정 (색다른)",
-  "Corriger le total Forme Alternative": "다른 폼 총합 수정",
-  "Corriger \"depuis la dernière\" (Forme)": "\"마지막 이후\" 수정 (폼)",
-  "Corriger le minimum (Forme)": "최솟값 수정 (폼)",
-  "Corriger le maximum (Forme)": "최댓값 수정 (폼)",
-  "Corriger le dernier intervalle (Forme)": "마지막 간격 수정 (폼)",
-  "Corriger le total all-time": "전체 누적 총합 수정",
-  "Nouvelle valeur": "새 값",
-  "Valeur invalide — nombre entier positif attendu": "잘못된 값 — 양의 정수를 입력해야 합니다",
-  "Le total all-time est déjà à 0": "전체 누적 총합이 이미 0입니다",
-  "Total all-time réinitialisé (était": "전체 누적 총합이 초기화되었습니다 (이전 값",
-  "Aucun retour en arrière possible": "실행 취소할 내용이 없습니다",
-  "Retour en arrière effectué (Shiny)": "실행 취소 완료 (색다른)",
-  "Retour en arrière effectué (Form Alternative)": "실행 취소 완료 (다른 폼)",
-  "Données sauvegardées illisibles": "저장된 데이터를 읽을 수 없습니다",
-  "Sauvegarde exportée": "백업이 내보내졌습니다",
-  "Données importées avec succès": "데이터를 성공적으로 가져왔습니다",
-  "Exporter": "내보내기",
-  "Importer": "가져오기",
-  "Analyse des IV": "개체값 분석",
-  "Historique": "기록",
-  "Colle une capture pour lancer l'analyse.": "스크린샷을 붙여넣어 분석을 시작하세요.",
-  "Aucune analyse enregistrée pour l'instant.": "아직 저장된 분석이 없습니다.",
-  "Aucune analyse enregistree pour l'instant.": "아직 저장된 분석이 없습니다.",
-  "Total IV": "IV 총합",
-  "Modifier PV": "체력 수정",
-  "Modifier Attaque": "공격 수정",
-  "Modifier Défense": "방어 수정",
-  "Modifier Atq. Spé.": "특공 수정",
-  "Modifier Déf. Spé.": "특방 수정",
-  "Modifier Vitesse": "스피드 수정",
-  "Valeur IV (0 a 31)": "IV 값 (0~31)",
-  "Valeur invalide (0 a 31 attendu)": "잘못된 값 (0~31 사이여야 합니다)",
-  "✓ 6/6 valeurs detectees avec confiance.": "✓ 6/6개 값이 정확히 감지되었습니다.",
-  "Valeurs manquantes : ": "누락된 값: ",
-  ". Clique sur une ligne pour la saisir, ou relance l'analyse.": ". 값을 입력하려면 행을 클릭하거나 분석을 다시 실행하세요.",
-  "Toutes les valeurs sont renseignees, mais certaines proviennent d'une estimation de position — verifie-les avant d'enregistrer.": "모든 값이 입력되었지만 일부는 위치 추정값입니다 — 저장하기 전에 확인하세요.",
-  "6/6 valeurs renseignees (dont une saisie manuelle).": "6/6개 값 입력 완료 (수동 입력 1개 포함).",
-  "Analyse enregistree — Total IV : ": "분석 저장됨 — IV 총합: ",
-  "Analyse en cours...": "분석 진행 중...",
-  "Echec de l'analyse. Utilise \"Relancer l'analyse\".": "분석 실패. \"분석 다시 실행\"을 사용하세요.",
-  "Entree supprimee": "항목 삭제됨",
-  "OCR : demarrage...": "OCR: 시작 중...",
-  "Aucun texte detecte sur l'image — verifie la capture": "이미지에서 텍스트가 감지되지 않았습니다 — 캡처를 확인하세요",
-  "Analyse terminee — 6/6 IV detectees": "분석 완료 — 6/6개 IV 감지됨",
-  "Analyse terminee — verifie les valeurs avant d'enregistrer": "분석 완료 — 저장하기 전에 값을 확인하세요",
-  "Analyse terminee — certaines valeurs restent a renseigner": "분석 완료 — 아직 입력되지 않은 값이 있습니다",
-  "Erreur OCR — verifie ta connexion puis relance l'analyse": "OCR 오류 — 연결을 확인한 후 분석을 다시 실행하세요",
-  "Colle d'abord une capture (Ctrl+V)": "먼저 스크린샷을 붙여넣으세요 (Ctrl+V)",
-  "Le presse-papiers ne contient pas d'image": "클립보드에 이미지가 없습니다",
-  "Image illisible": "이미지를 읽을 수 없습니다",
-  "Erreur de lecture du fichier colle": "붙여넣은 파일을 읽는 중 오류가 발생했습니다",
-  "Image invalide ou vide": "이미지가 잘못되었거나 비어 있습니다",
-  "Le fichier depose n'est pas une image": "드롭한 파일이 이미지가 아닙니다",
-  "Taille pinceau": "붓 크기",
-  "Dessine un rectangle sur l'image puis": "이미지 위에 사각형을 그린 후",
-  "Appliquer le rognage": "자르기 적용",
-  "Total accumule (": "누적 총합 (",
-  " analyses)": "개 분석)",
-  "Appuie sur": "다음 키를 누르세요:",
-  "Impr. écran": "Print Screen",
-  ", sélectionne la zone,": ", 영역을 선택한 뒤",
-  "puis colle ici avec": " 다음 키로 여기에 붙여넣으세요:",
-  "Capture collée": "스크린샷 붙여넣기 완료",
-  "↻ Relancer l'analyse": "↻ 분석 다시 실행",
-  "💾 Enregistrer dans l'historique": "💾 기록에 저장",
-  "Aucun intervalle enregistré pour l’instant.": "아직 저장된 간격이 없습니다.",
-  "Cliquer pour saisir/corriger manuellement": "클릭해서 직접 입력/수정",
-  "? (ambigu)": "? (모호함)",
-  "PV": "체력",
-  "Attaque": "공격",
-  "Défense": "방어",
-  "Atq. Spé.": "특공",
-  "Déf. Spé.": "특방",
-  "Vitesse": "스피드",
-  "Région": "지역",
-  "Sans pseudo": "닉네임 없음",
-  "Zone inconnue": "알 수 없는 구역",
-  "Cliquer pour modifier le pseudo": "클릭해서 닉네임 수정",
-  "Cliquer pour modifier la zone": "클릭해서 구역 수정",
-  "Cliquer pour modifier la région": "클릭해서 지역 수정",
-  "Cliquer pour changer l'avatar du dresseur": "클릭해서 트레이너 아바타 변경",
-  "aucune chasse sélectionnée": "선택된 사냥 없음",
-  "Crée une nouvelle chasse pour commencer à compter tes rencontres.": "새 사냥을 만들어 조우 횟수를 세기 시작하세요.",
-  "Une même chasse peut contenir plusieurs Pokémon. Le total reste historique. Avec la détection OCR automatique activée, chaque Pokémon rencontré est repéré et compté tout seul.": "하나의 사냥에는 여러 포켓몬이 포함될 수 있습니다. 총합은 계속 누적됩니다. 자동 OCR 감지를 켜두면 조우하는 포켓몬이 자동으로 인식되어 카운트됩니다.",
-  "capture d'écran — Pokémon Revolution Online": "스크린샷 — Pokémon Revolution Online",
-  "▸ afficher l’aperçu": "▸ 미리보기 표시",
-  "▾ réduire l’aperçu": "▾ 미리보기 숨기기",
-  "Arrêter le partage": "공유 중지",
-  "Partager mon écran": "화면 공유하기",
-  "détection OCR automatique": "자동 OCR 감지",
-  "zone calibrée ✓ — la détection surveille cette zone": "구역 보정 완료 ✓ — 이 구역을 감시 중입니다",
-  "trace un rectangle sur l’image, sur la zone où apparaît le texte de rencontre / combat": "조우/전투 텍스트가 나타나는 영역에 이미지 위로 사각형을 그리세요",
-  "partage la fenêtre du jeu pour activer la détection — l’OCR continue même si tu changes d’onglet": "감지를 활성화하려면 게임 창을 공유하세요 — 탭을 전환해도 OCR은 계속 작동합니다",
-  "partage actif": "공유 중",
-  "détection auto activée": "자동 감지 활성화됨",
-  "aperçu masqué": "미리보기 숨김",
-  "Clique-glisse sur l'aperçu pour définir la zone à surveiller. L'OCR lit la ligne du combat, par exemple": "미리보기 화면을 클릭한 채 드래그해서 감시할 영역을 지정하세요. OCR은 전투 텍스트 줄을 읽습니다. 예:",
-  ", puis récupère uniquement le nom après": ", 그리고 다음 뒤에 오는 이름만 추출합니다:",
-  ". Les Pokémon inconnus sont ajoutés automatiquement à la même chasse. Appuie sur": ". 알 수 없는 포켓몬은 자동으로 같은 사냥에 추가됩니다. 다음 키:",
-  "pour compter manuellement.": "를 눌러 수동으로 카운트하세요.",
-  "Replié — cliquer pour réafficher": "접힘 — 클릭해서 다시 표시",
-  "Déplier": "펼치기",
-  "Replier": "접기",
-  "▸ afficher": "▸ 표시",
-  "▾ tout réduire": "▾ 모두 접기",
-  "Probabilité cumulée": "누적 확률",
-  "Analyse de Convergence Dynamique": "동적 수렴 분석",
-  "Rencontres (N)": "조우 수 (N)",
-  "Forme Pokémon :": "포켓몬 폼:",
-  "Forme global :": "전체 폼:",
-  "graphique": "그래프",
-  "graphique masqué": "그래프 숨김",
-  "n'a pas la Forme": "은(는) 폼이 없습니다:",
-  "— graphique gelé": "— 그래프 고정됨",
-  "détails": "세부 정보",
-  "détails masqués": "세부 정보 숨김",
-  "— statistiques gelées": "— 통계 고정됨",
-  "panneau réduit —": "패널 축소됨 —",
-  "aucun Pokémon": "포켓몬 없음",
-  "Pokémon :": "포켓몬:",
-  "Aucun": "없음",
-  "Taux de rencontre :": "조우율:",
-  "moyenne": "평균",
-  "rencontres)": "회 조우)",
-  "Probabilité de rencontre de": "다음의 조우 확률:",
-  "ce Pokémon": "이 포켓몬",
-  "global :": "전체:",
-  "Convergence Forme Pokémon (": "포켓몬 폼 수렴 (",
-  "rencontres depuis le dernier reset de": "마지막 리셋 이후 조우 수 — 대상:",
-  "Convergence Forme global (": "전체 폼 수렴 (",
-  "rencontres depuis le dernier reset du cycle": "사이클의 마지막 리셋 이후 조우 수",
-  "Statut :": "상태:",
-  "Très proche du seuil": "임계값에 매우 근접",
-  "Très intéressant": "매우 흥미로움",
-  "Intéressant": "흥미로움",
-  "À surveiller": "주시할 만함",
-  "Total de cette chasse": "이 사냥의 총합",
-  "Temps": "시간",
-  "+1 Rencontre (": "+1 조우 (",
-  "Sélectionne un Pokémon": "포켓몬 선택",
-  "rencontres de ce Pokémon": "이 포켓몬의 조우 수",
-  "H.A (Talent Caché)": "숨특 (숨겨진 특성)",
-  "Capacité Cachée": "히든파워",
-  "Capacité Cachée — type calculé à partir des 6 IV (puissance fixe 60)": "히든파워 — 개체값(IV) 6개로 계산되는 타입 (고정 위력 60)",
-  "Combat": "격투",
-  "Roche": "바위",
-  "Insecte": "벌레",
-  "Spectre": "고스트",
-  "Acier": "강철",
-  "Feu": "불꽃",
-  "Eau": "물",
-  "Plante": "풀",
-  "Électrik": "전기",
-  "Psy": "에스퍼",
-  "Glace": "얼음",
-  "Ténèbres": "악",
-  "Retirer": "제거",
-  "icone avatar shop": "상점 아바타 아이콘",
-  "Supprimer": "삭제",
-  "miniature": "축소판",
-  "Forme trouvée !": "폼 발견!",
-  "Shiny trouvé !": "색다른 포켓몬 발견!",
-  "Reset ce Pokémon": "이 포켓몬 초기화",
-  "rencontres": "조우",
-  "Formes possédées par": "다음이 보유한 폼:",
-  "— décocher une Forme la fige (statistiques gelées) pour ce Pokémon": "— 폼 체크를 해제하면 이 포켓몬의 통계가 고정됩니다",
-  "— indisponible pour ce Pokémon (gelé)": "— 이 포켓몬에는 사용할 수 없음 (고정됨)",
-  "Nature(s) recommandée(s) :": "추천 성격:",
-  "Nature(s) des sets compétitifs Génération 9 (Smogon / StrategyDex) — utile pour choisir ton Pokémon Synchronize afin de cibler cette nature en rencontre.": "9세대 경쟁전 세트 기준 성격(Smogon / StrategyDex) — 싱크로 포켓몬으로 이 성격을 노리고 조우하려 할 때 유용합니다.",
-  "estimation": "추정치",
-  "Ton pseudo": "닉네임",
-  "Ex: Ash, Sacha...": "예: 지우, 레드...",
-  "Ex: Route 1, Forêt de Jade...": "예: 1번도로, 초록숲...",
-  "Annuler": "취소",
-  "Créer": "생성",
-  "Valider": "확인",
-  "Fermer": "닫기",
-  "Enregistrer": "저장",
-  "Ajouter": "추가",
-  "Modifier la région": "지역 수정",
-  "Ajouter un Pokémon": "포켓몬 추가",
-  "Nom du Pokémon": "포켓몬 이름",
-  "Ex: Pikachu, Rayquaza...": "예: 피카츄, 레쿠쟈...",
-  "Avatar du dresseur": "트레이너 아바타",
-  "Comment faire :": "방법:",
-  "ouvre le": "게임에서",
-  "du jeu, puis fais une capture d'écran de ton avatar affiché en bas à gauche du shop. Colle-la ensuite ici avec": "을 열고, 상점 왼쪽 아래에 표시된 아바타를 스크린샷으로 찍은 후 다음 키로 여기에 붙여넣으세요:",
-  "(ou choisis le fichier).": " (또는 파일을 선택하세요).",
-  "Utilise la": "다음:",
-  "baguette magique": "마법 지팡이",
-  "pour retirer le fond, et baisse la": "를 사용해 배경을 제거하고,",
-  "tolérance à 4": " 허용 오차를 4로 낮추세요.",
-  "pour que le contour se détoure correctement.": " 그러면 윤곽이 올바르게 잘립니다.",
-  "Colle une capture d'écran (Ctrl+V) ou clique pour choisir un fichier": "스크린샷을 붙여넣거나 (Ctrl+V) 클릭해서 파일을 선택하세요",
-  "Cliquer sur le fond à retirer": "제거할 배경을 클릭하세요",
-  "🪄 Baguette magique": "🪄 마법 지팡이",
-  "Effacer à la main": "직접 지우기",
-  "🧽 Gomme": "🧽 지우개",
-  "Restaurer les pixels d'origine": "원본 픽셀 복원",
-  "↩️ Restaurer": "↩️ 복원",
-  "Annuler la dernière action": "마지막 작업 취소",
-  "⤺ Annuler": "⤺ 취소",
-  "Recharger l'image d'origine": "원본 이미지 다시 불러오기",
-  "Réinitialiser": "초기화",
-  "Retirer l'avatar": "아바타 제거",
-  "Tolérance": "허용 오차",
-  "Le fichier déposé n'est pas une image": "드롭한 파일이 이미지가 아닙니다",
-  "Avatar enregistré": "아바타가 저장되었습니다",
-  "Erreur de lecture du fichier collé": "붙여넣은 파일을 읽는 중 오류가 발생했습니다",
-  "Trace d'abord un rectangle de sélection sur l'image": "먼저 이미지 위에 선택 사각형을 그리세요",
-  "Rien à annuler": "취소할 내용이 없습니다",
-  "Une chasse doit garder au moins un Pokémon": "사냥에는 최소 한 마리의 포켓몬이 있어야 합니다",
-  "supprimer": "삭제",
-  "ne possède pas la Forme": "은(는) 폼이 없습니다:",
-  "— case décochée": "— 체크 해제됨",
-  "Forme de": "다음의 폼:",
-  "trouvée (": "발견 (",
-  ") — convergences réinitialisées": ") — 수렴 초기화됨",
-  "Shiny de": "다음의 색다른:",
-  "trouvé — convergences réinitialisées": "발견 — 수렴 초기화됨",
-  "réinitialisé — compteurs mis à jour": "초기화됨 — 카운터 업데이트됨",
-  "détecté — +1": "감지됨 — +1",
-  "détecté</span>": "감지됨</span>",
-  "Détecté :": "감지됨:",
-  "texte non reconnu comme Pokémon": "포켓몬으로 인식되지 않은 텍스트",
-  "(aucun texte — vérifie la zone)": "(텍스트 없음 — 구역을 확인하세요)",
-  "OCR indisponible — vérifie ta connexion ou utilise E pour compter manuellement": "OCR을 사용할 수 없습니다 — 연결을 확인하거나 E 키로 수동 카운트하세요",
-  "Calibre d'abord la zone contenant 'Wild + Pokémon'": "먼저 'Wild + 포켓몬'이 포함된 구역을 보정하세요",
-  "Ce navigateur ne permet pas le partage d'écran ici — ouvre le fichier depuis une adresse HTTPS.": "이 브라우저에서는 화면 공유를 사용할 수 없습니다 — HTTPS 주소에서 파일을 여세요.",
-  "Partage d'écran refusé ou indisponible dans cet environnement": "이 환경에서는 화면 공유가 거부되었거나 사용할 수 없습니다",
-  "Urshifu (Rapide)": "우라오스 (연격의 형태)",
-  "Hoopa Déchaîné": "후파 (해방의 모습)",
-  "Sylveroc Glacial": "하얀 갈기의 버드레미",
-  "Sylveroc Spectral": "검은 갈기의 버드레미",
-  "Giratina (Origine)": "기라티나 (오리진폼)",
-  "Deoxys (Attaque)": "데옥시스 (어택폼)",
-  "Deoxys (Défense)": "데옥시스 (디펜스폼)",
-  "Deoxys (Vitesse)": "데옥시스 (스피드폼)",
-  "Motisec Chaud": "히트로토무",
-  "Motisec Lavo": "워시로토무",
-  "Motisec Frigo": "프로스트로토무",
-  "Motisec Ventilo": "팬로토무",
-  "Motisec Tondo": "컷로토무",
-  "Shaymin (Ciel)": "쉐이미 (스카이폼)",
-  "Talent/nature basé sur le set compétitif de": "다음의 경쟁전 세트를 기준으로 한 특성/성격:",
-  "; vérifie le talent propre à cette Forme si elle possède un set LC/NFE spécifique.": "; 이 폼이 별도의 LC/NFE 세트를 가지고 있다면 해당 폼 고유의 특성을 확인하세요.",
-  "Talent réel de ce Pokémon ; association nature/rôle estimée à partir de ses statistiques de base (pas un set Smogon vérifié).": "이 포켓몬의 실제 특성; 성격/역할 조합은 종족값을 기반으로 추정한 것입니다 (검증된 Smogon 세트 아님).",
-  "Une erreur est survenue pendant l'affichage — réessaie ou redémarre l'app.": "표시 중 오류가 발생했습니다 — 다시 시도하거나 앱을 재시작하세요.",
-  "Une erreur est survenue pendant l'affichage de cette chasse.": "이 사냥을 표시하는 중 오류가 발생했습니다.",
-  "Essaie de changer de chasse dans la liste, ou clique ci-dessous pour réessayer. Si le problème persiste, redémarre l'application.": "목록에서 다른 사냥으로 전환해 보거나, 아래를 클릭해 다시 시도하세요. 문제가 계속되면 앱을 재시작하세요.",
-  "Réessayer": "다시 시도"
-};
-
-// Dictionnaires inversés (langue -> français), construits paresseusement à
-// partir des dictionnaires FR->X ci-dessus. Un dictionnaire par langue
-// cible (en, ko) pour pouvoir revenir précisément au français quel que
-// soit la langue quittée.
-const REVERSE_CACHE = {};
-function getReverseTranslations(lang){
-  if (!REVERSE_CACHE[lang]) {
-    const src = lang === 'ko' ? TRANSLATIONS_FR_KO : TRANSLATIONS_FR_EN;
-    const rev = {};
+let TRANSLATIONS_EN_FR = null;
+function getReverseTranslations(){
+  if (!TRANSLATIONS_EN_FR) {
+    TRANSLATIONS_EN_FR = {};
     // Les clés les plus longues sont insérées en dernier pour qu'en cas de
-    // valeur traduite dupliquée (deux phrases françaises différentes qui
+    // valeur anglaise dupliquée (deux phrases françaises différentes qui
     // se traduisent pareil), le dictionnaire inverse garde la version la
-    // plus longue/spécifique — un compromis raisonnable pour un retour
+        // plus longue/spécifique — un compromis raisonnable pour un retour
     // au français qui reste lisible même si non-parfaitement bijectif.
-    const keys = Object.keys(src).sort((a,b)=>a.length-b.length);
-    keys.forEach(fr=>{ rev[src[fr]] = fr; });
-    REVERSE_CACHE[lang] = rev;
+    const keys = Object.keys(TRANSLATIONS_FR_EN).sort((a,b)=>a.length-b.length);
+    keys.forEach(fr=>{ TRANSLATIONS_EN_FR[TRANSLATIONS_FR_EN[fr]] = fr; });
   }
-  return REVERSE_CACHE[lang];
+  return TRANSLATIONS_EN_FR;
 }
 
-// direction: 'toEn' / 'toKo' (français -> langue cible) ou
-// 'toFrFromEn' / 'toFrFromKo' (langue -> français, retour à la source).
-function getDictForDirection(direction){
-  switch(direction){
-    case 'toEn': return TRANSLATIONS_FR_EN;
-    case 'toKo': return TRANSLATIONS_FR_KO;
-    case 'toFrFromEn': return getReverseTranslations('en');
-    case 'toFrFromKo': return getReverseTranslations('ko');
-  }
-  return {};
+let sortedFrKeysCache = null;
+function getSortedFrKeys(){
+  if (!sortedFrKeysCache) sortedFrKeysCache = Object.keys(TRANSLATIONS_FR_EN).sort((a,b)=>b.length-a.length);
+  return sortedFrKeysCache;
+}
+let sortedEnKeysCache = null;
+function getSortedEnKeys(){
+  if (!sortedEnKeysCache) sortedEnKeysCache = Object.keys(getReverseTranslations()).sort((a,b)=>b.length-a.length);
+  return sortedEnKeysCache;
 }
 
-const SORTED_KEYS_CACHE = {};
-function getSortedKeysForDirection(direction){
-  if (!SORTED_KEYS_CACHE[direction]) {
-    SORTED_KEYS_CACHE[direction] = Object.keys(getDictForDirection(direction)).sort((a,b)=>b.length-a.length);
-  }
-  return SORTED_KEYS_CACHE[direction];
-}
-
+// direction: 'toEn' (français -> anglais) ou 'toFr' (anglais -> français).
 function translateTextDirectional(str, direction){
   if (!str) return str;
-  const dict = getDictForDirection(direction);
-  const keys = getSortedKeysForDirection(direction);
+  const dict = direction === 'toEn' ? TRANSLATIONS_FR_EN : getReverseTranslations();
+  const keys = direction === 'toEn' ? getSortedFrKeys() : getSortedEnKeys();
   let result = str;
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
     if (result.indexOf(k) !== -1) result = result.split(k).join(dict[k]);
   }
-  // Conversion ciblée du suffixe de durée "Xj" (jours) -> "Xd" / "X일" dans
-  // les compteurs (fmtBossRemaining) — uniquement quand "j" suit
-  // directement un chiffre, pour ne jamais toucher un "j" isolé ailleurs
-  // dans un texte. Conversion inverse symétrique au retour vers le français.
+  // Conversion ciblée du suffixe de durée "Xj" (jours) -> "Xd" (days) dans
+  // les compteurs (fmtBossRemaining) — uniquement en anglais, uniquement
+  // quand "j" suit directement un chiffre, pour ne jamais toucher un "j"
+  // isolé ailleurs dans un texte.
   if (direction === 'toEn') result = result.replace(/(\d)j\b/g, '$1d');
-  else if (direction === 'toKo') result = result.replace(/(\d)j\b/g, '$1일');
-  else if (direction === 'toFrFromEn') result = result.replace(/(\d)d\b/g, '$1j');
-  else if (direction === 'toFrFromKo') result = result.replace(/(\d)일/g, '$1j');
+  else result = result.replace(/(\d)d\b/g, '$1j');
   return result;
 }
 
-function directionToTarget(lang){
-  if (lang === 'en') return 'toEn';
-  if (lang === 'ko') return 'toKo';
-  return null;
-}
-function directionToFrenchFrom(lang){
-  if (lang === 'en') return 'toFrFromEn';
-  if (lang === 'ko') return 'toFrFromKo';
-  return null;
-}
-
 function translateText(str){
-  const direction = directionToTarget(currentLang);
-  return direction ? translateTextDirectional(str, direction) : str;
-}
-
-// Prévient l'app de bureau Electron (si présente — window.windowControls
-// n'existe pas dans un simple navigateur) du changement de langue, pour
-// que les fenêtres qu'elle ouvre elle-même (ex: le sélecteur "Choisir une
-// source de capture" pour l'OCR) s'affichent dans la même langue que le
-// reste de l'application plutôt que de rester figées en français.
-function notifyElectronLanguage(lang){
-  if (typeof window.windowControls !== 'undefined' && window.windowControls.setLanguage) {
-    try { window.windowControls.setLanguage(lang); } catch(e){}
-  }
+  return translateTextDirectional(str, currentLang === 'en' ? 'toEn' : 'toFr');
 }
 
 const I18N_ATTRS = ['title','placeholder','alt','aria-label'];
@@ -8514,15 +7479,13 @@ function translateNodeDirectional(node, direction){
 }
 
 function translateNode(node){
-  const direction = directionToTarget(currentLang);
-  if (!direction) return;
-  translateNodeDirectional(node, direction);
+  if (currentLang !== 'en') return;
+  translateNodeDirectional(node, 'toEn');
 }
 
 function translateDOM(root){
-  const direction = directionToTarget(currentLang);
-  if (!direction) return;
-  translateNodeDirectional(root || document.body, direction);
+  if (currentLang !== 'en') return;
+  translateNodeDirectional(root || document.body, 'toEn');
 }
 
 let i18nObserverStarted = false;
@@ -8530,15 +7493,14 @@ function startI18nObserver(){
   if (i18nObserverStarted) return;
   i18nObserverStarted = true;
   const observer = new MutationObserver((mutations)=>{
-    const direction = directionToTarget(currentLang);
-    if (!direction) return;
+    if (currentLang !== 'en') return;
     mutations.forEach(m=>{
       if (m.type === 'childList') {
-        m.addedNodes.forEach(n=> translateNodeDirectional(n, direction));
+        m.addedNodes.forEach(n=> translateNodeDirectional(n, 'toEn'));
       } else if (m.type === 'characterData') {
-        translateNodeDirectional(m.target, direction);
+        translateNodeDirectional(m.target, 'toEn');
       } else if (m.type === 'attributes') {
-        translateNodeDirectional(m.target, direction);
+        translateNodeDirectional(m.target, 'toEn');
       }
     });
   });
@@ -8548,11 +7510,9 @@ function startI18nObserver(){
   });
 }
 
-const LANG_LABELS = { fr:'Français', en:'English', ko:'한국어' };
-
 function updateLangDropdownLabel(){
   const label = document.getElementById('langDropdownLabel');
-  if (label) label.textContent = LANG_LABELS[currentLang] || LANG_LABELS.fr;
+  if (label) label.textContent = currentLang === 'en' ? 'English' : 'Français';
 }
 
 function renderLangPanel(){
@@ -8561,7 +7521,6 @@ function renderLangPanel(){
   const langs = [
     {code:'fr', label:'Français'},
     {code:'en', label:'English'},
-    {code:'ko', label:'한국어'},
   ];
   list.innerHTML = langs.map(l=>`
     <label class="boss-row ${l.code===currentLang?'on':''}" data-lang="${l.code}" style="cursor:pointer;">
@@ -8575,28 +7534,17 @@ function renderLangPanel(){
 
 // Change la langue active : persiste le choix, puis rafraîchit tout ce qui
 // est actuellement à l'écran. Aucune fonction de rendu existante n'est
-// modifiée : on se contente (1) de reconvertir ce qui est affiché vers le
-// français source (au cas où on quitte une langue non-française), (2) de
-// rappeler les fonctions de rendu pour qu'elles regénèrent leur HTML
-// "source" en français, puis (3) de traduire le DOM obtenu vers la langue
-// cible si ce n'est pas le français. Repasser par le français intermédiaire
-// est ce qui permet un retour FR fidèle après un passage en EN ou KO, sans
-// avoir à mémoriser le texte original ailleurs — et un changement direct
-// EN <-> KO passe donc lui aussi par cette étape française intermédiaire.
+// modifiée : on se contente (1) de les rappeler pour qu'elles regénèrent
+// leur HTML "source" en français, puis (2) de retraduire le DOM obtenu si
+// la langue choisie est l'anglais. Passer par le français intermédiaire
+// avant de retraduire est ce qui permet un retour FR fidèle après un
+// passage en EN, sans avoir à mémoriser le texte original ailleurs.
 function setLanguage(lang){
-  if (lang !== 'fr' && lang !== 'en' && lang !== 'ko') return;
-  const prevLang = currentLang;
-
-  // 1) Reconvertir en français ce qui est actuellement affiché, si on
-  // quitte une langue non-française (sinon rien à faire, c'est déjà en
-  // français).
-  const backToFrDirection = directionToFrenchFrom(prevLang);
-  if (backToFrDirection) translateNodeDirectional(document.body, backToFrDirection);
-
+  if (lang !== 'fr' && lang !== 'en') return;
   currentLang = lang;
   try { localStorage.setItem(LANG_KEY, lang); }catch(e){}
 
-  // 2) Refaire le rendu des zones dynamiques déjà affichées, toujours en
+  // 1) Refaire le rendu des zones dynamiques déjà affichées, toujours en
   // français à la source (le code de ces fonctions n'a pas changé).
   if (typeof render === 'function') {
     try { render(); } catch(e){}
@@ -8614,16 +7562,17 @@ function setLanguage(lang){
     }
   });
 
-  // 3) Le DOM (statique + zones dynamiques regénérées à l'étape 2) est
-  // maintenant en français. On le traduit vers la langue cible si ce
-  // n'est pas le français.
-  const targetDirection = directionToTarget(currentLang);
-  if (targetDirection) translateNodeDirectional(document.body, targetDirection);
+  // 2) Si on revient au français, le DOM regénéré à l'étape 1 est déjà
+  // dans la bonne langue pour les zones dynamiques ; il ne reste qu'à
+  // reconvertir en français le HTML STATIQUE (chargé une seule fois au
+  // démarrage de la page) qui avait été traduit en anglais.
+  // Si on passe à l'anglais, on traduit tout le document (statique +
+  // dynamique) d'un coup.
+  translateNodeDirectional(document.body, currentLang === 'en' ? 'toEn' : 'toFr');
 
   updateLangDropdownLabel();
   renderLangPanel();
   startI18nObserver();
-  notifyElectronLanguage(currentLang);
 }
 
 function setupLangDropdown(){
@@ -8643,18 +7592,12 @@ function setupLangDropdown(){
   renderLangPanel();
   // Applique la préférence sauvegardée (localStorage) dès le chargement :
   // le HTML statique de la page vient d'être parsé en français, donc si la
-  // préférence est une autre langue on le traduit tout de suite, puis on
-  // démarre l'observateur pour que tout ce qui sera rendu ensuite (render()
-  // initial inclus, appelé juste après par loadState().then(...)) soit
-  // traduit au fil de l'eau.
-  translateDOM(document.body);
+  // préférence est l'anglais on le traduit tout de suite, puis on démarre
+  // l'observateur pour que tout ce qui sera rendu ensuite (render() initial
+  // inclus, appelé juste après par loadState().then(...)) soit traduit au
+  // fil de l'eau.
+  if (currentLang === 'en') translateDOM(document.body);
   startI18nObserver();
-  // Informe aussi l'app Electron de la langue initiale (chargée depuis
-  // localStorage), pas seulement des changements ultérieurs : sinon la
-  // toute première ouverture du sélecteur de capture resterait en
-  // français par défaut côté main.js tant qu'aucun changement de langue
-  // n'a eu lieu dans cette session.
-  notifyElectronLanguage(currentLang);
 }
 setupLangDropdown();
 /* ===================== FIN I18N ===================== */
