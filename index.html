@@ -309,6 +309,94 @@
     transition:background .12s,border-color .12s,color .12s;
   }
   .rightcol-collapse-btn:hover{background:rgba(255,255,255,.06);border-color:var(--poke-yellow);color:var(--poke-yellow);}
+
+  /* --- Sélecteur de page (barre de titre) : Hunt Tracker / Battle --- */
+  .page-menu-wrap{margin-left:0;}
+  .page-menu-btn{
+    display:flex;align-items:center;gap:8px;
+    background:transparent;border:1px solid transparent;border-radius:8px;
+    color:#fff;font:inherit;font-size:13px;letter-spacing:1px;text-transform:uppercase;
+    padding:6px 10px;cursor:pointer;white-space:nowrap;
+    transition:background .12s,border-color .12s;
+  }
+  .page-menu-btn:hover,.page-menu-wrap.open .page-menu-btn{border-color:var(--poke-yellow);background:rgba(255,255,255,.06);}
+  .page-menu-wrap.open .boss-btn-arrow{transform:rotate(180deg);}
+  .page-menu-panel{width:220px;padding:6px;gap:2px;}
+  .page-menu-item{
+    display:flex;align-items:center;gap:10px;width:100%;
+    background:transparent;border:1px solid transparent;border-radius:8px;
+    color:#dff5ff;font:inherit;font-size:12.5px;font-weight:700;letter-spacing:.4px;
+    padding:9px 10px;cursor:pointer;text-align:left;
+  }
+  .page-menu-item:hover{background:rgba(255,255,255,.06);}
+  .page-menu-item.active{border-color:#2d6d8c;background:rgba(255,255,255,.05);color:#fff;}
+  .page-menu-icon{width:18px;text-align:center;}
+  .page-menu-check{margin-left:auto;color:var(--poke-green);visibility:hidden;}
+  .page-menu-item.active .page-menu-check{visibility:visible;}
+  body.compact-mode .page-menu-btn{font-size:11px;padding:3px 6px;}
+
+  /* --- Page Battle (calculateur de dégâts) : page à part entière, la
+         mise en page Hunt Tracker (.wrap) est masquée quand elle est active --- */
+  .battle-page{display:none;max-width:1500px;margin:0 auto;padding:22px 24px 44px;}
+  body.page-battle .wrap{display:none;}
+  body.page-battle .battle-page{display:block;}
+  body.compact-mode .battle-page{display:none!important;}
+  .battle-header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #22516c;}
+  .battle-title{font-size:17px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#fff;}
+  .battle-sub{color:var(--text-dim);font-size:12px;}
+  .dmg-mega-row{display:flex;align-items:center;gap:7px;font-size:12px;margin:0 0 10px;cursor:pointer;color:#effaff;width:fit-content;}
+  .dmg-mega-row input{width:auto;margin:0;cursor:pointer;}
+  .battle-swap{margin-left:auto;font-size:12px;padding:7px 12px;white-space:nowrap;}
+  .battle-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:start;}
+  .battle-col{display:flex;flex-direction:column;gap:18px;min-width:0;}
+  @media (max-width:1180px){
+    .battle-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .battle-col-3{grid-column:1 / -1;}
+  }
+  @media (max-width:760px){
+    .battle-page{padding:16px 12px 36px;}
+    .battle-grid{grid-template-columns:1fr;}
+  }
+  .dmg-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 8px;margin-bottom:8px;}
+  .dmg-field-grid.cols-3{grid-template-columns:1fr 1fr 1fr;}
+  .dmg-field-grid.cols-6{grid-template-columns:repeat(6,1fr);}
+  .dmg-field{display:flex;flex-direction:column;gap:3px;}
+  .dmg-field.span-2{grid-column:span 2;}
+  .dmg-field label{font-size:9.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;}
+  .dmg-field input, .dmg-field select{
+    width:100%;background:#071d2c!important;border:1px solid #2d6d8c!important;color:#effaff!important;
+    padding:6px 7px;border-radius:7px!important;font-family:inherit;font-size:12px;box-sizing:border-box;
+  }
+  .dmg-field input:focus, .dmg-field select:focus{outline:none;border-color:var(--func);}
+  /* Les grilles IV/EV à 6 colonnes sont trop étroites pour les flèches +/-
+     natives de Chrome sur un champ number : elles finissaient par écraser
+     le chiffre affiché ("31" devenait illisible). On les masque et on
+     centre le texte pour ces champs compacts. */
+  .dmg-field-grid.cols-6 input[type=number]{
+    text-align:center; padding:6px 2px;
+    -moz-appearance:textfield;
+  }
+  .dmg-field-grid.cols-6 input[type=number]::-webkit-inner-spin-button,
+  .dmg-field-grid.cols-6 input[type=number]::-webkit-outer-spin-button{
+    -webkit-appearance:none; margin:0;
+  }
+  /* Évite que "AtqSp"/"DéfSp" passent à la ligne et décalent la grille. */
+  .dmg-field-grid.cols-6 .dmg-field label{white-space:nowrap;}
+  .dmg-loadrow{display:flex;gap:6px;margin-bottom:10px;}
+  .dmg-loadrow input{flex:1;}
+  .dmg-mini-note{font-size:10px;color:var(--text-dim);margin:-2px 0 8px;line-height:1.4;}
+  .dmg-result-main{font-size:20px;font-weight:800;color:var(--poke-yellow);margin-bottom:2px;}
+  .dmg-result-sub{font-size:11px;color:var(--text-dim);margin-bottom:2px;}
+  .dmg-result-row{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+  .dmg-result-row span:last-child{color:var(--number);font-weight:600;}
+  .dmg-ko{display:inline-block;margin-top:8px;padding:4px 9px;border-radius:7px;font-size:11px;font-weight:700;}
+  .dmg-ko.ohko{background:rgba(241,76,76,.18);color:#ff8d8d;border:1px solid rgba(241,76,76,.4);}
+  .dmg-ko.khko{background:rgba(255,196,0,.15);color:var(--poke-yellow);border:1px solid rgba(255,196,0,.35);}
+  .dmg-compare-header,.dmg-compare-row{display:grid;grid-template-columns:1.3fr 1fr 1fr 0.6fr 18px;gap:6px;align-items:center;font-size:10.5px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+  .dmg-compare-header{color:var(--text-dim);text-transform:uppercase;letter-spacing:.3px;font-size:9px;}
+  .dmg-compare-name{color:var(--number);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dmg-compare-del{background:none;border:0;color:var(--text-dim);cursor:pointer;font-size:11px;padding:0;}
+  .dmg-compare-del:hover{color:var(--danger);}
   .rightcol.iv-collapsed{gap:0;}
   .wrap.rightcol-collapsed{grid-template-columns:285px 1fr 46px;}
   @media (max-width:1180px){
@@ -1037,7 +1125,17 @@
 <body>
 
 <div class="titlebar">
-  <div class="tab active"><span class="pokeball-mini" aria-hidden="true"></span><span class="dot" id="titleDot"></span><strong>POKÉDEX</strong><span class="title-sep">•</span> HUNT TRACKER</div>
+  <div class="tab active"><span class="pokeball-mini" aria-hidden="true"></span><span class="dot" id="titleDot"></span><strong>POKÉDEX</strong><span class="title-sep">•</span>
+    <div class="boss-dropdown-wrap page-menu-wrap" id="pageMenuWrap">
+      <button class="page-menu-btn" id="pageMenuBtn" type="button" aria-haspopup="true" title="Changer de page">
+        <span id="pageMenuLabel">HUNT TRACKER</span> <span class="boss-btn-arrow">▾</span>
+      </button>
+      <div class="boss-dropdown-panel page-menu-panel" id="pageMenuPanel">
+        <button class="page-menu-item active" type="button" data-page="hunt"><span class="page-menu-icon">🎯</span><span>Hunt Tracker</span><span class="page-menu-check">✓</span></button>
+        <button class="page-menu-item" type="button" data-page="battle"><span class="page-menu-icon">⚔</span><span>Battle</span><span class="page-menu-check">✓</span></button>
+      </div>
+    </div>
+  </div>
 
   <div class="boss-dropdown-wrap" id="langDropdownWrap">
     <button class="boss-dropdown-btn" id="langDropdownBtn" type="button">
@@ -1211,7 +1309,7 @@
   <div class="rightcol" id="rightCol">
     <div class="rightcol-header">
       <span>◈ IV Scanner</span>
-      <button class="rightcol-collapse-btn" id="ivScannerToggleBtn" title="Réduire le panneau IV Scanner">▾</button>
+      <button class="rightcol-collapse-btn" id="ivScannerToggleBtn" title="Réduire le panneau">▾</button>
     </div>
 
     <div id="ivScannerBody" style="flex-direction:column;gap:16px;min-height:0;flex:1;">
@@ -1254,6 +1352,43 @@
         <div class="iv-empty">Aucune analyse enregistrée pour l'instant.</div>
       </div>
     </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="battle-page" id="battlePage">
+  <div class="battle-header">
+    <div class="battle-title">⚔ Battle</div>
+    <div class="battle-sub">Calculateur de dégâts — mécaniques Génération 9, sans Téracristallisation</div>
+    <button class="act battle-swap" id="dmgSwapBtn" type="button" title="Le défenseur devient l'attaquant et inversement, avec toutes leurs stats telles quelles. L'attaque est à saisir pour le nouvel attaquant.">⇄ Inverser attaquant / défenseur</button>
+  </div>
+  <div class="battle-grid">
+    <div class="battle-col">
+      <div class="iv-panel">
+        <div class="title">Pokémon attaquant</div>
+        <div id="dmgAttackerFields"></div>
+      </div>
+    </div>
+    <div class="battle-col">
+      <div class="iv-panel">
+        <div class="title">Pokémon défenseur</div>
+        <div id="dmgDefenderFields"></div>
+      </div>
+    </div>
+    <div class="battle-col battle-col-3">
+      <div class="iv-panel">
+        <div class="title">Attaque</div>
+        <div id="dmgMoveFields"></div>
+      </div>
+      <div class="iv-panel">
+        <div class="title">Résultat</div>
+        <div id="dmgResultWrap"></div>
+      </div>
+      <div class="iv-panel">
+        <div class="title">Comparer plusieurs attaques</div>
+        <div id="dmgCompareWrap"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -5399,6 +5534,7 @@ function setupIvScanner(){
         const file=item.getAsFile();
         if(!file) return;
         if(avatarModalOpen) loadAvatarFile(file);
+        else if(currentAppPage === 'battle') handleDmgAttackerPastedImage(file);
         else handleIvPastedImage(file);
         return;
       }
@@ -5420,16 +5556,16 @@ function setupIvScanner(){
   setupIvScannerCollapse();
 }
 
-// Bouton "réduire" du panneau IV Scanner : replie/déplie le bloc capture +
-// analyse + historique, et se souvient du choix (localStorage) d'une
-// session à l'autre.
+// Bouton "réduire" du panneau IV Scanner (colonne de droite) : replie/déplie
+// le panneau et se souvient du choix (localStorage) d'une session à l'autre.
 const IV_SCANNER_COLLAPSE_KEY = 'pokedexHuntTracker_ivScannerCollapsed_v1';
+
 function setupIvScannerCollapse(){
   const wrap=document.querySelector('.wrap');
   const rightCol=document.getElementById('rightCol');
-  const body=document.getElementById('ivScannerBody');
+  const ivBody=document.getElementById('ivScannerBody');
   const toggleBtn=document.getElementById('ivScannerToggleBtn');
-  if(!rightCol || !body || !toggleBtn) return;
+  if(!rightCol || !ivBody || !toggleBtn) return;
 
   let collapsed=false;
   try{ collapsed = localStorage.getItem(IV_SCANNER_COLLAPSE_KEY) === '1'; }catch(e){}
@@ -5439,9 +5575,9 @@ function setupIvScannerCollapse(){
     if(wrap) wrap.classList.toggle('rightcol-collapsed', collapsed);
     // display pilote directement en JS (pas de CSS) pour ne jamais entrer en
     // conflit avec un style inline qui gagnerait sur une regle de classe.
-    body.style.display = collapsed ? 'none' : 'flex';
+    ivBody.style.display = collapsed ? 'none' : 'flex';
     toggleBtn.textContent = collapsed ? '▸' : '▾';
-    toggleBtn.title = collapsed ? 'Afficher le panneau IV Scanner' : 'Réduire le panneau IV Scanner';
+    toggleBtn.title = collapsed ? 'Afficher le panneau' : 'Réduire le panneau';
   };
   apply();
 
@@ -5452,8 +5588,3041 @@ function setupIvScannerCollapse(){
   });
 }
 
-setupIvScanner();
 /* ===================== FIN IV SCANNER ===================== */
+
+/* ===================== CALCULATEUR DE DÉGÂTS (page Battle) =====================
+   Architecture volontairement alignée sur IV Scanner juste au-dessus :
+   - mêmes cartes ".iv-panel", mêmes boutons ".act" ; affiché sur la page Battle
+     (menu de la barre de titre), pas dans la colonne de droite.
+   - comme IV Scanner, les sous-blocs (ici #dmgAttackerFields,
+     #dmgDefenderFields, #dmgMoveFields, #dmgResultWrap) sont mis à jour
+     individuellement via innerHTML ciblé (jamais un re-render global de la
+     page) : exactement le même choix que renderIvHistory()/ivTotalBoxWrap
+     plus haut, pour ne jamais perdre le focus clavier pendant la saisie.
+   - les données Pokémon (types, stats de base, talents) réutilisent
+     globalPokemonDatabase + fetchPokemonTypes/fetchPokemonStats/
+     fetchPokemonAbilities, déjà utilisées par IV Scanner et les fiches de
+     chasse : aucune nouvelle source de données pour ça.
+   - les capacités (puissance/type/catégorie) sont récupérées depuis PokeAPI
+     à la demande et mises en cache dans DMG_MOVE_CACHE, sur le même
+     principe que found.stats/found.abilities dans fetchPokemonTypes.
+
+   Mécaniques : Génération 9, SANS Téracristallisation (exclue à la demande
+   du 2025 — voir l'échange précédent). Formule, ordre des modificateurs et
+   arrondis vérifiés par comparaison automatisée (hors de ce fichier) avec
+   @smogon/calc (la librairie utilisée par Pokémon Showdown) sur 11
+   scénarios couvrant : coup neutre, STAB, super efficace, résisté,
+   immunité, critique (avec gel des stages concernés), boosts/baisses de
+   stats, brûlure, météo (soleil), et le calcul de stat (IV/EV/nature).
+
+   Non couvert dans cette première version (architecture prévue pour les
+   ajouter sans tout réécrire — voir le paramètre options.otherModifier de
+   calculateMoveDamage) : objets, talents autres que Adaptability/Guts,
+   terrains, écrans, multi-coups, et le tableau de comparaison multi-attaques.
+============================================================================ */
+
+// ---- Moteur de calcul (validé, voir note ci-dessus) ----
+
+const DMG_NATURE_MODIFIERS = {
+  Hardy:{}, Lonely:{boost:'atk',cut:'def'}, Brave:{boost:'atk',cut:'spe'},
+  Adamant:{boost:'atk',cut:'spa'}, Naughty:{boost:'atk',cut:'spd'},
+  Bold:{boost:'def',cut:'atk'}, Docile:{}, Relaxed:{boost:'def',cut:'spe'},
+  Impish:{boost:'def',cut:'spa'}, Lax:{boost:'def',cut:'spd'},
+  Timid:{boost:'spe',cut:'atk'}, Hasty:{boost:'spe',cut:'def'}, Serious:{},
+  Jolly:{boost:'spe',cut:'spa'}, Naive:{boost:'spe',cut:'spd'},
+  Modest:{boost:'spa',cut:'atk'}, Mild:{boost:'spa',cut:'def'},
+  Quiet:{boost:'spa',cut:'spe'}, Bashful:{}, Rash:{boost:'spa',cut:'spd'},
+  Calm:{boost:'spd',cut:'atk'}, Gentle:{boost:'spd',cut:'def'},
+  Sassy:{boost:'spd',cut:'spe'}, Careful:{boost:'spd',cut:'spa'}, Quirky:{},
+};
+
+function dmgNatureMultiplier(natureName, stat){
+  const n = DMG_NATURE_MODIFIERS[natureName];
+  if(!n) return 1;
+  if(n.boost === stat) return 1.1;
+  if(n.cut === stat) return 0.9;
+  return 1;
+}
+
+// Stat finale (formule Gen 3+, inchangée jusqu'en Gen 9).
+function dmgCalcStat({ base, iv, ev, level, stat, nature }){
+  base = Number(base) || 0;
+  iv = Number(iv) || 0; ev = Number(ev) || 0; level = Number(level) || 100;
+  const core = Math.floor((2*base + iv + Math.floor(ev/4)) * level / 100);
+  if(stat === 'hp'){
+    if(!base) return 0;
+    if(base === 1) return 1; // cas Teigneton (Shedinja)
+    return core + level + 10;
+  }
+  return Math.floor((core + 5) * dmgNatureMultiplier(nature, stat));
+}
+
+function dmgStageMultiplier(stage){
+  stage = Math.max(-6, Math.min(6, Number(stage) || 0));
+  return stage >= 0 ? (2+stage)/2 : 2/(2-stage);
+}
+
+// Arrondi "Game Freak" : .5 arrondit vers le BAS (différent de l'arrondi JS standard).
+function dmgPokeRound(num){
+  return num % 1 > 0.5 ? Math.ceil(num) : Math.floor(num);
+}
+
+function dmgGetBaseDamage(level, power, attack, defense){
+  return Math.floor(
+    Math.floor(Math.floor((2*level)/5 + 2) * power * attack / defense) / 50
+  ) + 2;
+}
+
+const DMG_TYPE_CHART = {
+  normal:{rock:0.5,ghost:0,steel:0.5},
+  fire:{fire:0.5,water:0.5,grass:2,ice:2,bug:2,rock:0.5,dragon:0.5,steel:2},
+  water:{fire:2,water:0.5,grass:0.5,ground:2,rock:2,dragon:0.5},
+  electric:{water:2,electric:0.5,grass:0.5,ground:0,flying:2,dragon:0.5},
+  grass:{fire:0.5,water:2,grass:0.5,poison:0.5,ground:2,flying:0.5,bug:0.5,rock:2,dragon:0.5,steel:0.5},
+  ice:{fire:0.5,water:0.5,grass:2,ice:0.5,ground:2,flying:2,dragon:2,steel:0.5},
+  fighting:{normal:2,ice:2,poison:0.5,flying:0.5,psychic:0.5,bug:0.5,rock:2,ghost:0,dark:2,steel:2,fairy:0.5},
+  poison:{grass:2,poison:0.5,ground:0.5,rock:0.5,ghost:0.5,steel:0,fairy:2},
+  ground:{fire:2,electric:2,grass:0.5,poison:2,flying:0,bug:0.5,rock:2,steel:2},
+  flying:{electric:0.5,grass:2,fighting:2,bug:2,rock:0.5,steel:0.5},
+  psychic:{fighting:2,poison:2,psychic:0.5,dark:0,steel:0.5},
+  bug:{fire:0.5,grass:2,fighting:0.5,poison:0.5,flying:0.5,psychic:2,ghost:0.5,dark:2,steel:0.5,fairy:0.5},
+  rock:{fire:2,ice:2,fighting:0.5,ground:0.5,flying:2,bug:2,steel:0.5},
+  ghost:{normal:0,psychic:2,ghost:2,dark:0.5},
+  dragon:{dragon:2,steel:0.5,fairy:0},
+  dark:{fighting:0.5,psychic:2,ghost:2,dark:0.5,fairy:0.5},
+  steel:{fire:0.5,water:0.5,electric:0.5,ice:2,rock:2,steel:0.5,fairy:2},
+  fairy:{fire:0.5,fighting:2,poison:0.5,dragon:2,dark:2,steel:0.5},
+};
+const DMG_TYPES_LIST = ['normal','fire','water','electric','grass','ice','fighting','poison','ground','flying','psychic','bug','rock','ghost','dragon','dark','steel','fairy'];
+
+function dmgTypeEffectiveness(moveType, defenderTypes, ignoreGhostImmunity){
+  const row = DMG_TYPE_CHART[moveType] || {};
+  let mult = 1;
+  for(const t of defenderTypes){
+    let v = row[t] !== undefined ? row[t] : 1;
+    // Scrappy / Mind's Eye : les attaques Normal et Combat touchent les Spectres.
+    if(ignoreGhostImmunity && t === 'ghost' && v === 0) v = 1;
+    mult *= v;
+  }
+  return mult;
+}
+
+// attacker/defender : { level, types[], stats:{atk,def,spa,spd,hp}, stages:{atk,def,spa,spd},
+//                        ability, status }
+// move : { power, type, category:'Physical'|'Special', name }
+// options : { isCritical, weather:'sun'|'rain'|null }
+/* ---------------------------------------------------------------------
+   OBJETS TENUS. Chaque objet agit à un endroit précis de la formule, dans cet ordre
+   (comme la référence @smogon/calc, avec la même arithmétique en entiers sur 4096) :
+     puissance de l'attaque  -> stat d'attaque  -> stat de défense  -> dégâts finaux.
+   dmgItemEffects() est la SEULE fonction qui décide de l'effet d'un objet : elle sert au
+   calcul ET au texte affiché ("Life Orb ×1,3", "Choice Band : sans effet, attaque
+   spéciale"), donc les deux ne peuvent pas diverger.
+--------------------------------------------------------------------- */
+const DMG_ITEM_TYPE_BOOST = {
+  'Black Belt':'fighting','Black Glasses':'dark','Charcoal':'fire','Dragon Fang':'dragon','Fairy Feather':'fairy',
+  'Hard Stone':'rock','Magnet':'electric','Metal Coat':'steel','Miracle Seed':'grass','Mystic Water':'water',
+  'Never-Melt Ice':'ice','Poison Barb':'poison','Sharp Beak':'flying','Silk Scarf':'normal','Silver Powder':'bug',
+  'Soft Sand':'ground','Spell Tag':'ghost','Twisted Spoon':'psychic',
+};
+const DMG_ITEM_BERRY = {
+  'Chilan Berry':'normal','Occa Berry':'fire','Passho Berry':'water','Wacan Berry':'electric','Rindo Berry':'grass',
+  'Yache Berry':'ice','Chople Berry':'fighting','Kebia Berry':'poison','Shuca Berry':'ground','Coba Berry':'flying',
+  'Payapa Berry':'psychic','Tanga Berry':'bug','Charti Berry':'rock','Kasib Berry':'ghost','Haban Berry':'dragon',
+  'Colbur Berry':'dark','Babiri Berry':'steel','Roseli Berry':'fairy',
+};
+// Menu : [libellé de groupe, [[objet, aide courte], ...]]
+const DMG_ITEM_GROUPS = [
+  ['Attaque', [['Choice Band','Atq ×1,5'],['Choice Specs','ASp ×1,5'],['Life Orb','dégâts ×1,3'],['Expert Belt','×1,2 si super efficace'],['Muscle Band','phys. ×1,1'],['Wise Glasses','spé. ×1,1']]],
+  ['Défense', [['Assault Vest','DSp ×1,5'],['Eviolite','Déf/DSp ×1,5 si peut évoluer']]],
+  ['Propres à un Pokémon', [['Light Ball','Pikachu : Atq/ASp ×2'],['Thick Club','Osselait/Ossatueur : Atq ×2'],['Deep Sea Tooth','Coquiperl : ASp ×2'],['Deep Sea Scale','Coquiperl : DSp ×2'],['Metal Powder','Métamorph : Déf ×2'],['Soul Dew','Latios/Latias : Psy/Dragon ×1,2'],['Adamant Orb','Dialga : Acier/Dragon ×1,2'],['Lustrous Orb','Palkia : Eau/Dragon ×1,2'],['Griseous Orb','Giratina : Spectre/Dragon ×1,2']]],
+  ['Boost de type (×1,2)', Object.keys(DMG_ITEM_TYPE_BOOST).map(k => [k, DMG_ITEM_TYPE_BOOST[k]])],
+  ['Baies de résistance (÷2 si super efficace)', Object.keys(DMG_ITEM_BERRY).map(k => [k, DMG_ITEM_BERRY[k]])],
+  ['Vitesse', [['Choice Scarf','Vit ×1,5 (sans effet sur les dégâts)']]],
+];
+const DMG_PHYSICAL_DEF_SPECIALS = ['psyshock','psystrike','secretsword']; // attaques spéciales qui visent la Défense
+const dmgNormMove = n => String(n||'').toLowerCase().replace(/[^a-z]/g,'');
+const dmgHitsPhysicalDef = move => move.category === 'Physical' || DMG_PHYSICAL_DEF_SPECIALS.includes(dmgNormMove(move.name));
+
+function dmgChainMods(mods, lower, upper){
+  let M = 4096;
+  for(const mod of mods){ if(mod !== 4096) M = (M * mod + 2048) >> 12; }
+  return Math.max(Math.min(M, upper), lower);
+}
+const dmgFmtMod = mod => String(+(mod/4096).toFixed(2)).replace('.', ',');
+
+// Effet de l'objet tenu par `c` (combattant) dans le rôle `side` ('attacker' | 'defender').
+// Renvoie { bp, stat, final, text, why } : modificateurs sur 4096 (0 = aucun) et le texte
+// à afficher (text si l'objet agit, why si il n'a pas d'effet ici).
+function dmgItemEffects(side, c, move, eff, statKey){
+  const out = { bp:0, stat:0, final:0, text:'', why:'' };
+  const item = c.item || '';
+  if(!item) return out;
+  const slug = String(c.slug || '').toLowerCase(), root = dmgSpeciesRoot(slug);
+  const stat = DMG_STAT_LABELS[statKey] || statKey;
+  const typeTxt = t => `type ${t}`;
+
+  if(side === 'attacker'){
+    if(DMG_ITEM_TYPE_BOOST[item]){
+      const t = DMG_ITEM_TYPE_BOOST[item];
+      if(move.type === t){ out.bp = 4915; out.text = 'puissance ×1,2'; } else out.why = `ne booste que les attaques ${typeTxt(t)}`;
+      return out;
+    }
+    const orb = (cond, types, who) => {
+      if(!cond) out.why = `réservé à ${who}`;
+      else if(!types.includes(move.type)) out.why = `ne booste que ${types.join('/')}`;
+      else { out.bp = 4915; out.text = 'puissance ×1,2'; }
+    };
+    switch(item){
+      case 'Adamant Orb':  orb(slug === 'dialga', ['steel','dragon'], 'Dialga'); break;
+      case 'Lustrous Orb': orb(slug === 'palkia', ['water','dragon'], 'Palkia'); break;
+      case 'Griseous Orb': orb(root === 'giratina', ['ghost','dragon'], 'Giratina'); break;
+      case 'Soul Dew':     orb(root === 'latios' || root === 'latias', ['psychic','dragon'], 'Latios/Latias'); break;
+      case 'Muscle Band':
+        if(move.category === 'Physical'){ out.bp = 4505; out.text = 'puissance ×1,1'; } else out.why = 'attaques physiques seulement'; break;
+      case 'Wise Glasses':
+        if(move.category === 'Special'){ out.bp = 4505; out.text = 'puissance ×1,1'; } else out.why = 'attaques spéciales seulement'; break;
+      case 'Choice Band':
+        if(move.category === 'Physical'){ out.stat = 6144; out.text = `${stat} ×1,5`; } else out.why = 'attaques physiques seulement'; break;
+      case 'Choice Specs':
+        if(move.category === 'Special'){ out.stat = 6144; out.text = `${stat} ×1,5`; } else out.why = 'attaques spéciales seulement'; break;
+      case 'Light Ball':
+        if(slug.includes('pikachu')){ out.stat = 8192; out.text = `${stat} ×2`; } else out.why = 'réservé à Pikachu'; break;
+      case 'Thick Club':
+        if(!(root === 'cubone' || root === 'marowak')) out.why = 'réservé à Osselait/Ossatueur';
+        else if(move.category !== 'Physical') out.why = 'attaques physiques seulement';
+        else { out.stat = 8192; out.text = `${stat} ×2`; } break;
+      case 'Deep Sea Tooth':
+        if(root !== 'clamperl') out.why = 'réservé à Coquiperl';
+        else if(move.category !== 'Special') out.why = 'attaques spéciales seulement';
+        else { out.stat = 8192; out.text = `${stat} ×2`; } break;
+      case 'Life Orb': out.final = 5324; out.text = 'dégâts ×1,3'; break;
+      case 'Expert Belt':
+        if(eff > 1){ out.final = 4915; out.text = 'dégâts ×1,2 (super efficace)'; } else out.why = 'seulement si l\'attaque est super efficace'; break;
+      default: out.why = 'sans effet sur les dégâts infligés';
+    }
+    return out;
+  }
+
+  // Défenseur
+  if(DMG_ITEM_BERRY[item]){
+    const t = DMG_ITEM_BERRY[item];
+    if(move.type === t && (eff > 1 || t === 'normal')){ out.final = 2048; out.text = 'dégâts ÷2 (baie consommée)'; }
+    else out.why = t === 'normal' ? 'ne réduit que les attaques Normal' : `ne réduit que les attaques ${t} super efficaces`;
+    return out;
+  }
+  switch(item){
+    case 'Assault Vest':
+      if(statKey === 'spd'){ out.stat = 6144; out.text = 'DSp ×1,5'; } else out.why = 'ne protège que des attaques qui visent la Déf Spé'; break;
+    case 'Eviolite':
+      if(c.canEvolve === false) out.why = 'Pokémon complètement évolué';
+      else { out.stat = 6144; out.text = `${stat} ×1,5${c.canEvolve === undefined ? ' (évolution non vérifiée)' : ''}`; } break;
+    case 'Deep Sea Scale':
+      if(root !== 'clamperl') out.why = 'réservé à Coquiperl';
+      else if(statKey !== 'spd') out.why = 'ne protège que sur la Déf Spé';
+      else { out.stat = 8192; out.text = 'DSp ×2'; } break;
+    case 'Metal Powder':
+      if(root !== 'ditto') out.why = 'réservé à Métamorph';
+      else if(statKey !== 'def') out.why = 'ne protège que sur la Défense';
+      else { out.stat = 8192; out.text = 'Déf ×2'; } break;
+    default: out.why = 'sans effet quand ce Pokémon défend';
+  }
+  return out;
+}
+
+// Propriétés des attaques utiles aux talents (PokeAPI ne les fournit pas) : liste extraite des données
+// de la librairie de référence @smogon/calc (licence MIT), noms normalisés (lettres minuscules seulement).
+const DMG_MOVE_FLAG_DATA = {
+  contact: "accelerock,acrobatics,aerialace,anchorshot,aquajet,aquastep,aquatail,armthrust,assurance,astonish,avalanche,axekick,behemothbash,behemothblade,bide,bind,bite,bitterblade,blazekick,bodypress,bodyslam,boltbeak,boltstrike,bounce,branchpoke,bravebird,breakingswipe,brickbreak,brutalswing,bugbite,bulletpunch,ceaselessedge,chipaway,circlethrow,clamp,closecombat,collisioncourse,cometpunch,comeuppance,constrict,counter,covet,crabhammer,crosschop,crosspoison,crunch,crushclaw,crushgrip,cut,darkestlariat,dig,direclaw,dive,dizzypunch,doubleedge,doublehit,doubleironbash,doublekick,doubleshock,doubleslap,dragonascent,dragonclaw,dragonhammer,dragonrush,dragontail,drainingkiss,drainpunch,drillpeck,drillrun,dualchop,dualwingbeat,dynamicpunch,electrodrift,endeavor,extremespeed,facade,fakeout,falsesurrender,falseswipe,feintattack,fellstinger,firefang,firelash,firepunch,firstimpression,fishiousrend,flail,flamecharge,flamewheel,flareblitz,flipturn,fly,flyingpress,focuspunch,forcepalm,foulplay,frustration,furyattack,furycutter,furyswipes,geargrind,gigaimpact,glaiverush,grassknot,grassyglide,guillotine,gyroball,hammerarm,hardpress,headbutt,headcharge,headlongrush,headsmash,heartstamp,heatcrash,heavyslam,highhorsepower,highjumpkick,holdback,hornattack,horndrill,hornleech,hyperdrill,hyperfang,iceball,icefang,icehammer,icepunch,icespinner,infestation,ironhead,irontail,jawlock,jetpunch,jumpkick,karatechop,knockoff,kowtowcleave,lashout,lastresort,leafblade,leechlife,lick,liquidation,lowkick,lowsweep,lunge,machpunch,megahorn,megakick,megapunch,metalclaw,meteormash,mightycleave,mortalspin,multiattack,needlearm,nightslash,nuzzle,outrage,payback,peck,petaldance,phantomforce,plasmafists,playrough,pluck,poisonfang,poisonjab,poisontail,populationbomb,pounce,pound,powertrip,poweruppunch,powerwhip,psyblade,psychicfangs,psyshieldbash,punishment,pursuit,quickattack,rage,ragefist,ragingbull,rapidspin,razorshell,retaliate,return,revenge,reversal,rockclimb,rocksmash,rollingkick,rollout,sacredsword,scratch,seismictoss,shadowclaw,shadowforce,shadowpunch,shadowsneak,shadowstrike,skittersmack,skullbash,skydrop,skyuppercut,slam,slash,smartstrike,smellingsalts,snaptrap,solarblade,spark,spectralthief,spinout,spiritbreak,steamroller,steelroller,steelwing,stomp,stompingtantrum,stoneaxe,stormthrow,strength,struggle,submission,suckerpunch,sunsteelstrike,supercellslam,superfang,superpower,surgingstrikes,tackle,tailslap,takedown,temperflare,thief,thrash,throatchop,thunderfang,thunderouskick,thunderpunch,trailblaze,tripleaxel,tripledive,triplekick,tropkick,trumpcard,upperhand,uturn,vcreate,vinewhip,visegrip,vitalthrow,volttackle,wakeupslap,waterfall,wavecrash,wickedblow,wildcharge,wingattack,woodhammer,wrap,wringout,xscissor,zenheadbutt,zingzap",
+  punch: "bulletpunch,cometpunch,dizzypunch,doubleironbash,drainpunch,dynamicpunch,firepunch,focuspunch,hammerarm,headlongrush,icehammer,icepunch,jetpunch,machpunch,megapunch,meteormash,plasmafists,poweruppunch,ragefist,shadowpunch,skyuppercut,surgingstrikes,thunderpunch,wickedblow",
+  bite: "bite,crunch,firefang,fishiousrend,hyperfang,icefang,jawlock,poisonfang,psychicfangs,thunderfang",
+  pulse: "aurasphere,darkpulse,dragonpulse,healpulse,orderup,originpulse,terrainpulse,waterpulse",
+  slicing: "aerialace,aircutter,airslash,aquacutter,behemothblade,bitterblade,ceaselessedge,crosspoison,cut,furycutter,kowtowcleave,leafblade,mightycleave,nightslash,populationbomb,psyblade,psychocut,razorleaf,razorshell,sacredsword,secretsword,slash,solarblade,stoneaxe,tachyoncutter,xscissor",
+  sound: "alluringvoice,boomburst,bugbuzz,chatter,clangingscales,clangoroussoul,confide,disarmingvoice,echoedvoice,eeriespell,grasswhistle,growl,healbell,howl,hypervoice,metalsound,nobleroar,overdrive,partingshot,perishsong,psychicnoise,relicsong,roar,round,screech,sing,snarl,snore,sparklingaria,supersonic,torchsong,uproar",
+  bullet: "acidspray,aurasphere,barrage,beakblast,bulletseed,eggbomb,electroball,energyball,focusblast,gyroball,iceball,magnetbomb,mistball,mudbomb,octazooka,pollenpuff,pyroball,rockblast,rockwrecker,searingshot,seedbomb,shadowball,sludgebomb,syrupbomb,weatherball,zapcannon",
+  wind: "aeroblast,aircutter,bleakwindstorm,blizzard,fairywind,gust,heatwave,hurricane,icywind,petalblizzard,sandsearstorm,sandstorm,springtidestorm,tailwind,twister,whirlwind,wildboltstorm",
+  recoil: "bravebird,doubleedge,flareblitz,headcharge,headsmash,lightofruin,submission,takedown,volttackle,wavecrash,wildcharge,woodhammer",
+  crash: "axekick,highjumpkick,jumpkick,supercellslam",
+  secondary: "acid,acidspray,airslash,alluringvoice,anchorshot,ancientpower,appleacid,aquastep,astonish,aurawheel,aurorabeam,axekick,barbbarrage,bite,bittermalice,blazekick,blazingtorque,bleakwindstorm,blizzard,blueflare,bodyslam,boltstrike,boneclub,bounce,breakingswipe,bubble,bubblebeam,bugbuzz,bulldoze,burningjealousy,ceaselessedge,chargebeam,chatter,chillingwater,combattorque,confusion,constrict,crosspoison,crunch,crushclaw,darkpulse,diamondstorm,direclaw,discharge,dizzypunch,doubleironbash,dragonbreath,dragonrush,drumbeating,dynamicpunch,earthpower,eeriespell,electroshot,electroweb,ember,energyball,esperwing,extrasensory,fakeout,fierydance,fierywrath,fireblast,firefang,firelash,firepunch,flamecharge,flamethrower,flamewheel,flareblitz,flashcannon,focusblast,forcepalm,freezedry,freezeshock,freezingglare,glaciate,gravapple,gunkshot,headbutt,heartstamp,heatwave,hurricane,hyperfang,icebeam,iceburn,icefang,icepunch,iciclecrash,icywind,infernalparade,inferno,ironhead,irontail,lavaplume,leaftornado,lick,liquidation,lowsweep,luminacrash,lunge,lusterpurge,magicaltorque,malignantchain,matchagotcha,metalclaw,meteormash,mirrorshot,mistball,moonblast,mortalspin,mountaingale,mudbomb,muddywater,mudshot,mudslap,mysticalfire,mysticalpower,needlearm,nightdaze,noxioustorque,nuzzle,octazooka,ominouswind,orderup,paleowave,playrough,poisonfang,poisonjab,poisonsting,poisontail,polarflare,pounce,powdersnow,poweruppunch,psybeam,psychic,psychicnoise,psyshieldbash,pyroball,rapidspin,razorshell,relicsong,rockclimb,rockslide,rocksmash,rocktomb,rollingkick,sacredfire,saltcure,sandsearstorm,scald,scorchingsands,searingshot,secretpower,seedflare,shadowball,shadowbone,shadowstrike,shellsidearm,signalbeam,silverwind,skittersmack,skyattack,sludge,sludgebomb,sludgewave,smog,snarl,snore,spark,sparklingaria,spiritbreak,spiritshackle,springtidestorm,steameruption,steamroller,steelwing,stomp,stoneaxe,strangesteam,strugglebug,syrupbomb,throatchop,thunder,thunderbolt,thunderfang,thunderouskick,thunderpunch,thundershock,torchsong,trailblaze,triattack,triplearrows,tropkick,twineedle,twister,upperhand,volttackle,waterfall,waterpulse,wickedtorque,wildboltstorm,zapcannon,zenheadbutt,zingzap",
+};
+
+const DMG_MOVE_FLAGS = {};
+for(const k of Object.keys(DMG_MOVE_FLAG_DATA)) DMG_MOVE_FLAGS[k] = new Set(DMG_MOVE_FLAG_DATA[k].split(','));
+const dmgMoveFlag = (flag, moveName) => !!(DMG_MOVE_FLAGS[flag] && DMG_MOVE_FLAGS[flag].has(dmgNormMove(moveName)));
+
+/* ---------------------------------------------------------------------
+   TALENTS qui changent les dégâts. Ils agissent aux mêmes étapes que les objets, et dans
+   l'ordre de la référence @smogon/calc :
+     type de l'attaque -> efficacité / immunités -> STAB -> puissance -> Attaque ->
+     Défense -> dégâts finaux.
+   Un talent adverse est ignoré par Mold Breaker / Teravolt / Turboblaze (seulement ceux
+   que ces talents peuvent ignorer en jeu). Non calculés (et signalés dans le résultat) :
+   ceux qui dépendent des PV restants, du sexe, de l'ordre de jeu, d'un statut adverse...
+--------------------------------------------------------------------- */
+const dmgAbilityKey = n => String(n || '').toLowerCase().replace(/[^a-z]/g, '');
+const DMG_ATE_TYPES = { pixilate:'fairy', aerilate:'flying', refrigerate:'ice', galvanize:'electric' };
+const DMG_NO_TYPE_CHANGE = new Set(['revelationdance','judgment','naturepower','technoblast','multiattack','naturalgift','weatherball','terrainpulse','struggle']);
+const DMG_MOLD_BREAKERS = new Set(['moldbreaker','teravolt','turboblaze']);
+const DMG_BREAKABLE = new Set(('armortail,aromaveil,aurabreak,battlearmor,bigpecks,bulletproof,clearbody,contrary,damp,dazzling,disguise,dryskin,eartheater,eelevate,filter,flashfire,flowergift,flowerveil,fluffy,friendguard,furcoat,goodasgold,grasspelt,guarddog,heatproof,heavymetal,hypercutter,iceface,icescales,illuminate,immunity,innerfocus,insomnia,keeneye,leafguard,levitate,lightmetal,lightningrod,limber,magicbounce,magmaarmor,marvelscale,mindseye,mirrorarmor,motordrive,multiscale,oblivious,overcoat,owntempo,pastelveil,punkrock,purifyingsalt,queenlymajesty,sandveil,sapsipper,shellarmor,shielddust,simple,snowcloak,solidrock,soundproof,stickyhold,stormdrain,sturdy,suctioncups,sweetveil,tangledfeet,telepathy,terashell,thermalexchange,thickfat,unaware,vitalspirit,voltabsorb,waterabsorb,waterbubble,waterveil,wellbakedbody,whitesmoke,windrider,wonderguard,wonderskin').split(','));
+// Talents dont l'effet dépend de quelque chose que le calculateur ne connaît pas.
+const DMG_ABILITY_UNMODELED = {
+  overgrow:'dépend des PV restants (calcul fait avec les PV pleins)', blaze:'dépend des PV restants (calcul fait avec les PV pleins)',
+  torrent:'dépend des PV restants (calcul fait avec les PV pleins)', swarm:'dépend des PV restants (calcul fait avec les PV pleins)',
+  defeatist:'dépend des PV restants', slowstart:'dépend du tour de jeu', analytic:'dépend de l\'ordre de jeu', rivalry:'dépend du sexe des deux Pokémon',
+  parentalbond:'attaque en deux coups (non calculé)', toxicboost:'dépend du statut empoisonné', sandforce:'dépend de la tempête de sable (non gérée)',
+  hadronengine:'dépend du terrain (non géré)', stakeout:'dépend d\'un changement adverse', flowergift:'dépend du soleil et d\'un allié',
+  marvelscale:'dépend du statut du défenseur', grasspelt:'dépend du terrain (non géré)', plus:'dépend d\'un allié', minus:'dépend d\'un allié',
+};
+
+// Immunité conférée par le talent du défenseur (chaîne vide = aucune).
+function dmgAbilityImmunity(defAb, mtype, eff, move){
+  if(defAb === 'wonderguard' && eff <= 1) return 'seules les attaques super efficaces touchent';
+  if(mtype === 'grass' && defAb === 'sapsipper') return 'immunisé aux attaques Plante';
+  if(mtype === 'fire' && (defAb === 'flashfire' || defAb === 'wellbakedbody')) return 'immunisé aux attaques Feu';
+  if(mtype === 'water' && (defAb === 'dryskin' || defAb === 'stormdrain' || defAb === 'waterabsorb')) return 'immunisé aux attaques Eau';
+  if(mtype === 'electric' && (defAb === 'lightningrod' || defAb === 'motordrive' || defAb === 'voltabsorb')) return 'immunisé aux attaques Électrik';
+  if(mtype === 'ground' && (defAb === 'levitate' || defAb === 'eartheater')) return 'immunisé aux attaques Sol';
+  if(defAb === 'bulletproof' && dmgMoveFlag('bullet', move.name)) return 'immunisé aux balles et bombes';
+  if(defAb === 'soundproof' && dmgMoveFlag('sound', move.name)) return 'immunisé aux attaques sonores';
+  if(defAb === 'windrider' && dmgMoveFlag('wind', move.name)) return 'immunisé aux attaques de vent';
+  return '';
+}
+
+function calculateMoveDamage(attacker, defender, move, options = {}){
+  if(move.category === 'Status' || !move.power){
+    return { damage:[0], hpPercent:[0,0], min:0, max:0, minPercent:0, maxPercent:0, effectiveness:1, stab:1, itemNotes:[], abilityNotes:[] };
+  }
+
+  const isCritical = !!options.isCritical;
+  const mvName = dmgNormMove(move.name);
+  const flag = f => dmgMoveFlag(f, move.name);
+
+  // ---- Talents ----
+  const atkAb = dmgAbilityKey(attacker.ability);
+  let defAb = dmgAbilityKey(defender.ability);
+  const abNotes = [];
+  const note = (side, ability, text) => abNotes.push({ side, ability, applied:true, text });
+  if(DMG_MOLD_BREAKERS.has(atkAb) && DMG_BREAKABLE.has(defAb)){
+    note('attacker', attacker.ability, `ignore le talent adverse (${defender.ability})`);
+    defAb = '';
+  }
+
+  // 1) Type de l'attaque : Pixilate & co transforment une attaque Normal ; Normalize toutes.
+  let mtype = move.type, ateBoost = false;
+  if(!DMG_NO_TYPE_CHANGE.has(mvName)){
+    if(atkAb === 'normalize'){ mtype = 'normal'; ateBoost = true; }
+    else if(move.type === 'normal' && DMG_ATE_TYPES[atkAb]){ mtype = DMG_ATE_TYPES[atkAb]; ateBoost = true; }
+  }
+  if(ateBoost) note('attacker', attacker.ability, mtype === move.type ? 'puissance ×1,2' : `${move.type} → ${mtype}, puissance ×1,2`);
+  const mv = { ...move, type: mtype };
+
+  const atkStatKey = mv.category === 'Physical' ? 'atk' : 'spa';
+  // Psyshock / Psystrike / Secret Sword sont spéciales mais frappent la Défense.
+  const defStatKey = dmgHitsPhysicalDef(move) ? 'def' : 'spd';
+
+  // 2) Efficacité et immunités
+  const ignoreGhost = (atkAb === 'scrappy' || atkAb === 'mindseye') && (mtype === 'normal' || mtype === 'fighting');
+  const eff = dmgTypeEffectiveness(mtype, defender.types || [], ignoreGhost);
+  if(ignoreGhost && (defender.types || []).includes('ghost')) note('attacker', attacker.ability, 'touche les Spectres');
+  const immunity = dmgAbilityImmunity(defAb, mtype, eff, move);
+  if(immunity){
+    note('defender', defender.ability, immunity);
+    return { damage:Array(16).fill(0), hpPercent:Array(16).fill(0), min:0, max:0, minPercent:0, maxPercent:0, effectiveness:0, stab:1,
+             itemNotes:[], abilityNotes:abNotes, attackUsed:0, defenseUsed:0, powerUsed:0 };
+  }
+
+  const aFx = dmgItemEffects('attacker', attacker, mv, eff, atkStatKey);
+  const dFx = dmgItemEffects('defender', defender, mv, eff, defStatKey);
+
+  // 3) Puissance : Technician/Tough Claws/... puis changement de type, Peau Sèche, objet.
+  let basePower = move.power;
+  // Facade : puissance doublée quand le lanceur a un statut (ici : brûlé) — et la
+  // brûlure ne réduit alors pas ses dégâts (voir applyBurn plus bas).
+  if(mvName === 'facade' && attacker.status === 'brn') basePower *= 2;
+  const bpMods = [];
+  if(atkAb === 'technician' && basePower <= 60){ bpMods.push(6144); note('attacker', attacker.ability, 'puissance ×1,5 (attaque ≤ 60)'); }
+  else if(atkAb === 'flareboost' && attacker.status === 'brn' && mv.category === 'Special'){ bpMods.push(6144); note('attacker', attacker.ability, 'puissance ×1,5 (brûlé)'); }
+  else if(atkAb === 'megalauncher' && flag('pulse')){ bpMods.push(6144); note('attacker', attacker.ability, 'puissance ×1,5 (pulsation)'); }
+  else if(atkAb === 'strongjaw' && flag('bite')){ bpMods.push(6144); note('attacker', attacker.ability, 'puissance ×1,5 (morsure)'); }
+  else if(atkAb === 'sharpness' && flag('slicing')){ bpMods.push(6144); note('attacker', attacker.ability, 'puissance ×1,5 (tranchante)'); }
+  if(atkAb === 'sheerforce' && flag('secondary')){ bpMods.push(5325); note('attacker', attacker.ability, 'puissance ×1,3 (effet secondaire supprimé)'); }
+  else if(atkAb === 'toughclaws' && flag('contact')){ bpMods.push(5325); note('attacker', attacker.ability, 'puissance ×1,3 (contact)'); }
+  else if(atkAb === 'punkrock' && flag('sound')){ bpMods.push(5325); note('attacker', attacker.ability, 'puissance ×1,3 (sonore)'); }
+  if(ateBoost) bpMods.push(4915);
+  if(atkAb === 'reckless' && (flag('recoil') || flag('crash'))){ bpMods.push(4915); note('attacker', attacker.ability, 'puissance ×1,2 (recul)'); }
+  else if(atkAb === 'ironfist' && flag('punch')){ bpMods.push(4915); note('attacker', attacker.ability, 'puissance ×1,2 (poing)'); }
+  if(defAb === 'dryskin' && mtype === 'fire'){ bpMods.push(5120); note('defender', defender.ability, 'attaque Feu : puissance ×1,25'); }
+  if(aFx.bp) bpMods.push(aFx.bp);
+  let power = basePower;
+  if(bpMods.length) power = Math.max(1, dmgPokeRound(basePower * dmgChainMods(bpMods, 41, 2097152) / 4096));
+
+  // 4) Attaque : stages (ignorés par Unaware), Hustle, puis talents et objet.
+  let atkStage = isCritical ? Math.max(0, attacker.stages?.[atkStatKey] || 0) : (attacker.stages?.[atkStatKey] || 0);
+  if(defAb === 'unaware' && atkStage !== 0){ atkStage = 0; note('defender', defender.ability, 'ignore les modifs de stats de l\'attaquant'); }
+  let attack = Math.floor(attacker.stats[atkStatKey] * dmgStageMultiplier(atkStage));
+  if(atkAb === 'hustle' && mv.category === 'Physical'){ attack = dmgPokeRound(attack * 3 / 2); note('attacker', attacker.ability, 'Atq ×1,5'); }
+  const atMods = [];
+  const sun = options.weather === 'sun';
+  if(atkAb === 'solarpower' && sun && mv.category === 'Special'){ atMods.push(6144); note('attacker', attacker.ability, 'ASp ×1,5 (soleil)'); }
+  else if(atkAb === 'gorillatactics' && mv.category === 'Physical'){ atMods.push(6144); note('attacker', attacker.ability, 'Atq ×1,5'); }
+  else if(atkAb === 'guts' && attacker.status && attacker.status !== 'none' && mv.category === 'Physical'){ atMods.push(6144); note('attacker', attacker.ability, 'Atq ×1,5 (statut)'); }
+  else if((atkAb === 'steelworker' && mtype === 'steel') || (atkAb === 'dragonsmaw' && mtype === 'dragon') || (atkAb === 'rockypayload' && mtype === 'rock')){
+    atMods.push(6144); note('attacker', attacker.ability, `${DMG_STAT_LABELS[atkStatKey]} ×1,5 (attaque ${mtype})`);
+  }
+  else if(atkAb === 'transistor' && mtype === 'electric'){ atMods.push(5325); note('attacker', attacker.ability, `${DMG_STAT_LABELS[atkStatKey]} ×1,3 (attaque Électrik)`); }
+  else if((atkAb === 'waterbubble' && mtype === 'water') || ((atkAb === 'hugepower' || atkAb === 'purepower') && mv.category === 'Physical')){
+    atMods.push(8192); note('attacker', attacker.ability, `${DMG_STAT_LABELS[atkStatKey]} ×2`);
+  }
+  if((defAb === 'thickfat' && (mtype === 'fire' || mtype === 'ice')) || (defAb === 'waterbubble' && mtype === 'fire') || (defAb === 'purifyingsalt' && mtype === 'ghost') || (defAb === 'heatproof' && mtype === 'fire')){
+    atMods.push(2048); note('defender', defender.ability, `attaque ${mtype} : dégâts ÷2`);
+  }
+  if((defAb === 'tabletsofruin' && atkAb !== 'tabletsofruin' && mv.category === 'Physical') || (defAb === 'vesselofruin' && atkAb !== 'vesselofruin' && mv.category === 'Special')){
+    atMods.push(3072); note('defender', defender.ability, `${DMG_STAT_LABELS[atkStatKey]} adverse ×0,75`);
+  }
+  if(atkAb === 'orichalcumpulse' && mv.category === 'Physical' && sun){ atMods.push(5461); note('attacker', attacker.ability, 'Atq ×1,33 (soleil)'); }
+  if(aFx.stat) atMods.push(aFx.stat);
+  if(atMods.length) attack = Math.max(1, dmgPokeRound(attack * dmgChainMods(atMods, 410, 131072) / 4096));
+
+  // 5) Défense : stages (ignorés par Unaware), Fur Coat, Ruines, objet.
+  let defStage = isCritical ? Math.min(0, defender.stages?.[defStatKey] || 0) : (defender.stages?.[defStatKey] || 0);
+  if(atkAb === 'unaware' && defStage !== 0){ defStage = 0; note('attacker', attacker.ability, 'ignore les modifs de stats du défenseur'); }
+  let defense = Math.floor(defender.stats[defStatKey] * dmgStageMultiplier(defStage));
+  const dfMods = [];
+  if(defAb === 'furcoat' && defStatKey === 'def'){ dfMods.push(8192); note('defender', defender.ability, 'Déf ×2'); }
+  if((atkAb === 'swordofruin' && defAb !== 'swordofruin' && defStatKey === 'def') || (atkAb === 'beadsofruin' && defAb !== 'beadsofruin' && defStatKey === 'spd')){
+    dfMods.push(3072); note('attacker', attacker.ability, `${DMG_STAT_LABELS[defStatKey]} adverse ×0,75`);
+  }
+  if(dFx.stat) dfMods.push(dFx.stat);
+  if(dfMods.length) defense = Math.max(1, dmgPokeRound(defense * dmgChainMods(dfMods, 410, 131072) / 4096));
+
+  let baseDamage = dmgGetBaseDamage(attacker.level, power, attack, defense);
+
+  if(options.weather){
+    if(options.weather === 'sun'){
+      if(mtype === 'fire') baseDamage = dmgPokeRound(baseDamage * 1.5);
+      else if(mtype === 'water') baseDamage = dmgPokeRound(baseDamage * 0.5);
+    } else if(options.weather === 'rain'){
+      if(mtype === 'water') baseDamage = dmgPokeRound(baseDamage * 1.5);
+      else if(mtype === 'fire') baseDamage = dmgPokeRound(baseDamage * 0.5);
+    }
+  }
+
+  if(isCritical) baseDamage = Math.floor(baseDamage * 1.5);
+
+  // STAB : calculé sur le type FINAL de l'attaque (donc une attaque Normal devenue Fée
+  // profite du STAB d'un Pokémon Fée). Adaptability : ×2 ; Protean/Libero : toujours STAB.
+  const hasStab = (attacker.types || []).includes(mtype);
+  let stab = 1;
+  if(hasStab){
+    stab = atkAb === 'adaptability' ? 2 : 1.5;
+    if(atkAb === 'adaptability') note('attacker', attacker.ability, 'STAB ×2');
+  } else if(atkAb === 'protean' || atkAb === 'libero'){
+    stab = 1.5; note('attacker', attacker.ability, 'STAB ×1,5 (le Pokémon prend le type de l\'attaque)');
+  }
+
+  const applyBurn = attacker.status === 'brn' && mv.category === 'Physical' &&
+    atkAb !== 'guts' && move.name !== 'Facade';
+
+  // 6) Dégâts finaux : talents (attaquant puis défenseur), objet de l'attaquant, baie.
+  const finalMods = [];
+  if(atkAb === 'neuroforce' && eff > 1){ finalMods.push(5120); note('attacker', attacker.ability, 'dégâts ×1,25 (super efficace)'); }
+  else if(atkAb === 'sniper' && isCritical){ finalMods.push(6144); note('attacker', attacker.ability, 'critique : dégâts ×1,5 en plus'); }
+  else if(atkAb === 'tintedlens' && eff < 1){ finalMods.push(8192); note('attacker', attacker.ability, 'dégâts ×2 (pas très efficace)'); }
+  if(defAb === 'multiscale' || defAb === 'shadowshield'){ finalMods.push(2048); note('defender', defender.ability, 'dégâts ÷2 (suppose les PV pleins)'); }
+  if(defAb === 'fluffy' && flag('contact') && atkAb !== 'longreach'){ finalMods.push(2048); note('defender', defender.ability, 'attaque de contact : dégâts ÷2'); }
+  else if(defAb === 'punkrock' && flag('sound')){ finalMods.push(2048); note('defender', defender.ability, 'attaque sonore : dégâts ÷2'); }
+  else if(defAb === 'icescales' && mv.category === 'Special'){ finalMods.push(2048); note('defender', defender.ability, 'attaque spéciale : dégâts ÷2'); }
+  if((defAb === 'solidrock' || defAb === 'filter' || defAb === 'prismarmor') && eff > 1){ finalMods.push(3072); note('defender', defender.ability, 'super efficace : dégâts ×0,75'); }
+  if(defAb === 'fluffy' && mtype === 'fire'){ finalMods.push(8192); note('defender', defender.ability, 'attaque Feu : dégâts ×2'); }
+  if(aFx.final) finalMods.push(aFx.final);
+  if(dFx.final) finalMods.push(dFx.final);
+  const finalMod = dmgChainMods(finalMods, 41, 131072);
+
+  const damage = [];
+  for(let i=0;i<16;i++){
+    let d = Math.floor(baseDamage * (85+i) / 100);
+    d = dmgPokeRound(d * stab);
+    d = Math.floor(dmgPokeRound(d) * eff);
+    if(applyBurn) d = Math.floor(d/2);
+    d = dmgPokeRound(Math.max(eff === 0 ? 0 : 1, d * finalMod / 4096));
+    damage.push(d);
+  }
+
+  const maxHp = defender.stats.hp || 1;
+  const hpPercent = damage.map(d => Math.min(100, (d / maxHp) * 100));
+
+  // Explications affichées : ce que fait chaque objet tenu (ou pourquoi il n'a pas d'effet).
+  const itemNotes = [];
+  if(attacker.item) itemNotes.push({ side:'attacker', item:attacker.item, applied:!aFx.why, text:aFx.why ? `sans effet : ${aFx.why}` : aFx.text });
+  if(defender.item) itemNotes.push({ side:'defender', item:defender.item, applied:!dFx.why, text:dFx.why ? `sans effet : ${dFx.why}` : dFx.text });
+  // Talents sélectionnés dont l'effet n'est pas calculé : on le dit plutôt que de le taire.
+  const unmodeledNote = (side, ab, name) => { if(DMG_ABILITY_UNMODELED[ab]) abNotes.push({ side, ability:name, applied:false, text:`non calculé : ${DMG_ABILITY_UNMODELED[ab]}` }); };
+  unmodeledNote('attacker', atkAb, attacker.ability);
+  unmodeledNote('defender', dmgAbilityKey(defender.ability), defender.ability);
+
+  return {
+    damage, hpPercent,
+    min: damage[0], max: damage[15],
+    minPercent: hpPercent[0], maxPercent: hpPercent[15],
+    effectiveness: eff, stab,
+    itemNotes, abilityNotes: abNotes, attackUsed: attack, defenseUsed: defense, powerUsed: power,
+    moveType: mtype,
+  };
+}
+
+// ---- Données en cache pour les capacités (attaques) ----
+// Même principe que found.stats/found.abilities dans fetchPokemonTypes :
+// une requête PokeAPI par capacité, mise en cache, jamais refaite.
+const DMG_MOVE_CACHE = {};
+async function fetchMoveData(nameOrId){
+  const key = String(nameOrId).toLowerCase().trim().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  if(!key) return null;
+  if(DMG_MOVE_CACHE[key]) return DMG_MOVE_CACHE[key];
+  try{
+    const res = await fetch(`https://pokeapi.co/api/v2/move/${key}`);
+    if(!res.ok) return null;
+    const data = await res.json();
+    const result = {
+      // Nom en anglais (cohérent avec la recherche PokeAPI elle-même, et
+      // avec la convention déjà demandée pour le Pokémon adverse) plutôt
+      // qu'en français : évite par ex. "Choc Émotionnel" pour "Spirit Break".
+      name: data.names?.find(n=>n.language?.name==='en')?.name || data.name,
+      power: typeof data.power === 'number' ? data.power : 0,
+      type: data.type?.name || 'normal',
+      category: data.damage_class?.name === 'physical' ? 'Physical'
+        : data.damage_class?.name === 'special' ? 'Special' : 'Status',
+      accuracy: typeof data.accuracy === 'number' ? data.accuracy : null,
+    };
+    DMG_MOVE_CACHE[key] = result;
+    return result;
+  }catch(e){ return null; }
+}
+
+// ---- État du formulaire (non persisté — comme le panneau de capture OCR) ----
+function dmgDefaultFighter(isDefender){
+  return {
+    name: '', level: 100, nature: 'Hardy',
+    ivs: { hp:31, atk:31, def:31, spa:31, spd:31, spe:31 },
+    evs: isDefender
+      ? { hp:252, atk:252, def:252, spa:252, spd:252, spe:252 }
+      : { hp:0, atk:0, def:0, spa:0, spd:0, spe:0 },
+    baseStats: null, types: [], ability: '', abilities: [], learnableMoves: [], status: 'none',
+    slug: '', forms: [], formSlug: '', formsKey: '',
+    mega: false, megaBase: null, megaSlug: '', megaPrevAbility: '',
+    item: '', canEvolve: undefined, canEvolveKey: '',
+    stages: { atk:0, def:0, spa:0, spd:0, spe:0 },
+  };
+}
+let dmgAttacker = dmgDefaultFighter(false);
+let dmgDefender = dmgDefaultFighter(true);
+let dmgMove = { name: '', power: 60, type: 'normal', category: 'Physical' };
+let dmgOptions = { isCritical: false, weather: 'none' };
+let dmgAtkCaptureCanvas = null;
+let dmgAtkCaptureBusy = false;
+
+function dmgComputedStats(fighter){
+  if(!fighter.baseStats) return { hp:0, atk:0, def:0, spa:0, spd:0, spe:0 };
+  const out = {};
+  ['hp','atk','def','spa','spd','spe'].forEach(stat=>{
+    out[stat] = dmgCalcStat({
+      base: fighter.baseStats[stat], iv: fighter.ivs[stat], ev: fighter.evs[stat],
+      level: fighter.level, stat, nature: fighter.nature,
+    });
+  });
+  return out;
+}
+
+function dmgKoLabel(result, defenderMaxHp){
+  if(!defenderMaxHp) return '';
+  if(result.minPercent >= 100) return { cls:'ohko', text:'OHKO garanti' };
+  if(result.maxPercent >= 100) return { cls:'ohko', text:'OHKO possible' };
+  const hitsMin = Math.ceil(100 / result.maxPercent);
+  const hitsMax = Math.ceil(100 / Math.max(result.minPercent, 0.01));
+  const label = hitsMin === hitsMax ? `${hitsMin}HKO probable` : `${hitsMin}-${hitsMax}HKO`;
+  return { cls:'khko', text: label };
+}
+
+const DMG_NATURE_NAMES = Object.keys(DMG_NATURE_MODIFIERS);
+const DMG_STAT_LABELS = { hp:'PV', atk:'Atq', def:'Déf', spa:'ASp', spd:'DSp', spe:'Vit' };
+
+// Liste "mes Pokémon" : tous les Pokémon de toutes les chasses, dédupliqués
+// par nom (on garde le plus récemment vu), triés alphabétiquement — permet
+// de changer rapidement d'attaquant/défenseur sans tout ressaisir (point 9
+// de la demande).
+function dmgMyPokemonList(){
+  const byName = {};
+  (state.hunts || []).forEach(h=>{
+    (h.pokemon || []).forEach(p=>{
+      byName[p.name] = p;
+    });
+  });
+  return Object.values(byName).sort((a,b)=>a.name.localeCompare(b.name));
+}
+
+function dmgItemOptionsHtml(current){
+  return `<option value="">Aucun objet</option>` + DMG_ITEM_GROUPS.map(([group, items]) =>
+    `<optgroup label="${escapeHtml(group)}">${items.map(([name, hint]) =>
+      `<option value="${escapeHtml(name)}" ${current===name ? 'selected' : ''}>${escapeHtml(name)} — ${escapeHtml(hint)}</option>`).join('')}</optgroup>`).join('');
+}
+
+function dmgFighterFieldsHtml(fighter, prefix, isDefender){
+  const myList = dmgMyPokemonList();
+  const natureOptions = DMG_NATURE_NAMES.map(n=>`<option value="${n}" ${fighter.nature===n?'selected':''}>${n}</option>`).join('');
+  const myListOptions = `<option value="">— mes Pokémon —</option>` +
+    myList.map(p=>`<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('');
+  const abilityOptions = (fighter.abilities && fighter.abilities.length)
+    ? fighter.abilities.map(a=>{
+        const label = formatAbilityDisplayName(a.name) + (a.hidden ? ' (caché)' : '');
+        return `<option value="${escapeHtml(formatAbilityDisplayName(a.name))}" ${fighter.ability===formatAbilityDisplayName(a.name)?'selected':''}>${escapeHtml(label)}</option>`;
+      }).join('')
+    : (fighter.ability ? `<option value="${escapeHtml(fighter.ability)}" selected>${escapeHtml(fighter.ability)}</option>` : '<option value="">—</option>');
+
+  const typesHtml = fighter.types.length
+    ? fighter.types.map(t=>`<span class="type-badge type-${t}">${t}</span>`).join(' ')
+    : '<span style="color:var(--text-dim);font-size:11px;">— charge un Pokémon pour voir ses types —</span>';
+
+  const ivGrid = ['hp','atk','def','spa','spd','spe'].map(stat=>`
+    <div class="dmg-field"><label>IV ${DMG_STAT_LABELS[stat]}</label>
+      <input type="number" min="0" max="31" id="${prefix}Iv_${stat}" value="${fighter.ivs[stat]}">
+    </div>`).join('');
+  const evGrid = ['hp','atk','def','spa','spd','spe'].map(stat=>`
+    <div class="dmg-field"><label>EV ${DMG_STAT_LABELS[stat]}</label>
+      <input type="number" min="0" max="252" step="4" id="${prefix}Ev_${stat}" value="${fighter.evs[stat]}">
+    </div>`).join('');
+  const evTotal = Object.values(fighter.evs).reduce((a,b)=>a+(Number(b)||0),0);
+
+  const stageGrid = ['atk','def','spa','spd'].map(stat=>`
+    <div class="dmg-field"><label>${DMG_STAT_LABELS[stat]}</label>
+      <input type="number" min="-6" max="6" id="${prefix}Stage_${stat}" value="${fighter.stages[stat]}">
+    </div>`).join('');
+
+  const computed = dmgComputedStats(fighter);
+  const statsLine = fighter.baseStats
+    ? ['hp','atk','def','spa','spd','spe'].map(s=>`${DMG_STAT_LABELS[s]} ${computed[s]}`).join(' · ')
+    : '';
+
+  const captureHtml = isDefender ? '' : `
+    <div class="iv-dropzone" id="dmgAtkDropzone" tabindex="0" style="margin-bottom:10px;">
+      <div id="dmgAtkDropzoneContent">
+        <div class="icon">🖼</div>
+        <div>Capture la fiche du Pokémon (<span class="key">Impr. écran</span>), colle ici avec <span class="key">Ctrl</span>+<span class="key">V</span></div>
+        <div style="margin-top:6px;font-size:10.5px;opacity:.85;">Au choix : la fiche entière, ou <b>en 2 collages</b> (1. nom + talent + attaques, 2. le bloc des stats seul) : les collages se complètent. Un recadrage attaques + stats marche aussi avec le nom tapé ci-dessous.</div>
+      </div>
+    </div>
+    <div id="dmgAtkPreviewWrap" style="display:none;margin-bottom:10px;">
+      <div class="iv-preview-wrap"><img id="dmgAtkPreviewImg" alt="Capture collée"></div>
+      <div class="iv-preview-actions">
+        <button class="act" id="dmgAtkReanalyzeBtn" style="font-size:11px;padding:6px 9px;flex:1;">↻ Relancer l'analyse</button>
+        <button class="act danger-outline" id="dmgAtkClearCaptureBtn" style="font-size:11px;padding:6px 9px;">✕</button>
+      </div>
+    </div>
+    <div class="status-line" id="dmgAtkCaptureStatus"></div>
+    <div id="dmgAtkCaptureDebug"></div>
+  `;
+
+  return `
+    ${captureHtml}
+    <div class="dmg-loadrow">
+      <input type="text" id="${prefix}NameInput" placeholder="Ex: Garchomp, raichu alolan..." value="${escapeHtml(fighter.name)}">
+      <button class="act" id="${prefix}LoadBtn" style="font-size:11px;padding:6px 9px;">Charger</button>
+    </div>
+    ${fighter.loadNote
+      ? `<div class="status-line ${fighter.loadNote.cls}" id="${prefix}LoadNote" style="margin-bottom:8px;">${escapeHtml(fighter.loadNote.text)}</div>`
+      : `<div class="dmg-mini-note" id="${prefix}LoadNote" style="margin-bottom:8px;">Formes : ajoute « alolan », « galarian », « hisuian », « paldean » ou « mega » (ex. raichu alolan, mega charizard x). Sur une capture, la forme est aussi devinée d'après le talent et les stats.</div>`}
+    <div id="${prefix}FormRow">${dmgFormRowHtml(fighter, prefix)}</div>
+    <label class="dmg-mega-row" title="Coche si ce Pokémon est Méga-évolué. La fiche affiche les stats de la forme normale : elle est lue telle quelle, puis la Méga-forme (stats de base, types, talent) est appliquée par-dessus. Niveau, nature et IV/EV ne changent pas.">
+      <input type="checkbox" id="${prefix}MegaCheck" ${fighter.mega ? 'checked' : ''}> Méga-évolué
+    </label>
+    ${fighter.mega ? `<div class="dmg-mini-note" style="margin:-4px 0 8px;">La fiche est lue en forme normale, puis la Méga-forme est appliquée (stats de base, types, talent).</div>` : ''}
+    <select id="${prefix}MySelect" style="width:100%;background:#071d2c;border:1px solid #2d6d8c;color:#effaff;padding:6px 7px;border-radius:7px;font-size:12px;margin-bottom:10px;">
+      ${myListOptions}
+    </select>
+    <div style="margin-bottom:8px;">${typesHtml}</div>
+    ${fighter.baseStats ? `<div class="dmg-mini-note" id="${prefix}StatsLine">${escapeHtml(dmgStatsLineText(fighter))}</div>` : `<div id="${prefix}StatsLine"></div>`}
+    <div class="dmg-field-grid cols-3">
+      <div class="dmg-field"><label>Niveau</label><input type="number" min="1" max="100" id="${prefix}Level" value="${fighter.level}"></div>
+      <div class="dmg-field span-2"><label>Nature</label><select id="${prefix}Nature">${natureOptions}</select></div>
+    </div>
+    <div class="dmg-field-grid cols-3">
+      <div class="dmg-field span-2"><label>Talent</label><select id="${prefix}Ability">${abilityOptions}</select></div>
+      <div class="dmg-field"><label>Brûlé(e)</label>
+        <select id="${prefix}Status"><option value="none" ${fighter.status==='none'?'selected':''}>Non</option><option value="brn" ${fighter.status==='brn'?'selected':''}>Oui</option></select>
+      </div>
+    </div>
+    <div class="dmg-field" style="margin-bottom:8px;"><label>Objet tenu</label>
+      <select id="${prefix}Item">${dmgItemOptionsHtml(fighter.item)}</select>
+    </div>
+    <div class="dmg-mini-note">IV (0–31)</div>
+    <div class="dmg-field-grid cols-6">${ivGrid}</div>
+    <div class="dmg-mini-note">EV (0–252, total actuel : ${evTotal}/510)</div>
+    <div class="dmg-field-grid cols-6">${evGrid}</div>
+    <div class="dmg-mini-note">Modifs de stats en combat (stages -6 à +6)</div>
+    <div class="dmg-field-grid cols-6">${stageGrid}</div>
+  `;
+}
+
+/* ---------------------------------------------------------------------
+   FORMES (régionales, Méga) du calculateur.
+
+   La liste Pokémon de l'app (pokemon?limit=1025) ne contient que les
+   ESPÈCES DE BASE : les formes (Raichu d'Alola, Ninetales d'Alola, Meowth
+   de Galar, Typhlosion de Hisui, Tauros de Paldea, Méga-évolutions...) ont
+   des identifiants à part (10001+) et n'y figurent pas. Or leurs types,
+   stats et talents diffèrent de la forme de base (ex. Raichu d'Alola est
+   Électrik/Psy avec Surge Surfer, pas Électrik/Static).
+
+   Plutôt que de coder des noms de formes en dur, on interroge la liste
+   OFFICIELLE des variantes de chaque espèce (pokemon-species -> varieties)
+   et on retient celle qui correspond. La liste Pokémon globale n'est pas
+   modifiée (elle sert aussi à la détection de rencontre en jeu, où ajouter
+   ces formes risquerait de fausser les correspondances approximatives).
+--------------------------------------------------------------------- */
+const DMG_REGION_WORDS = {
+  alola:  ['alola','alolan','alolain','alolane','alolien','alolienne','dalola'],
+  galar:  ['galar','galarian','galarien','galarienne','dgalar'],
+  hisui:  ['hisui','hisuian','hisuien','hisuienne','dhisui'],
+  paldea: ['paldea','paldean','paldeen','paldeenne','dpaldea'],
+};
+const DMG_REGION_LABELS = { alola:"d'Alola", galar:'de Galar', hisui:'de Hisui', paldea:'de Paldea' };
+// Formes régionales dont le nom PokeAPI ne contient pas le nom de la région :
+// le Basculin de Hisui s'appelle "basculin-white-striped".
+const DMG_REGION_EXTRA_FORMS = { hisui: ['basculin-white-striped'] };
+const dmgIsRegionalVariety = name =>
+  /-(alola|galar|hisui|paldea)(-|$)/.test(name) ||
+  Object.values(DMG_REGION_EXTRA_FORMS).some(list=>list.includes(name));
+const DMG_FORM_STOPWORDS = ['de','d','du','of','form','forme','la','le'];
+
+// "Raichu d'Alola", "Mr. Mime", "Farfetch'd" -> "raichu dalola", "mr mime", "farfetchd"
+function dmgNormalizeTypedName(input){
+  return String(input||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/['’`]/g,'')
+    .replace(/[^a-z0-9]+/g,' ')
+    .trim();
+}
+
+// Sépare le nom de l'espèce des mots de forme ("alolan", "galarian", "mega x"...),
+// dans n'importe quel ordre ("alolan raichu" == "raichu alolan" == "raichu-alola").
+function dmgParseTypedPokemonName(input){
+  const tokens = dmgNormalizeTypedName(input).split(' ').filter(Boolean);
+  // Tolère une faute de frappe ("hishui", "alolean", "galarien") : écart de 1
+  // lettre (2 pour les mots de 7 lettres et plus) avec un mot de région connu.
+  // Les noms de Pokémon voisins (gallade, galvantula, alomomola, palafin...)
+  // sont beaucoup trop éloignés pour être pris pour une région.
+  const regionOf = t => {
+    const exact = Object.keys(DMG_REGION_WORDS).find(k=>DMG_REGION_WORDS[k].includes(t));
+    if(exact) return exact;
+    if(t.length < 5) return null;
+    for(const key of Object.keys(DMG_REGION_WORDS)){
+      for(const word of DMG_REGION_WORDS[key]){
+        if(word.length < 5 || Math.abs(word.length - t.length) > 2) continue;
+        if(levenshteinDistance(t, word) <= (word.length >= 7 ? 2 : 1)) return key;
+      }
+    }
+    return null;
+  };
+  let region = null, mega = false;
+  for(const t of tokens){
+    const r = regionOf(t);
+    if(r) region = r;
+    if(t === 'mega') mega = true;
+  }
+  let rest = tokens.filter(t => !regionOf(t) && t !== 'mega');
+  // Les petits mots de liaison ("de", "d'") ne sont retirés que s'il y a bien
+  // un mot de forme : sinon on pourrait abîmer un vrai nom d'espèce.
+  if(region || mega) rest = rest.filter(t => !DMG_FORM_STOPWORDS.includes(t));
+  let megaLetter = null;
+  if(mega && rest.length>1 && (rest[rest.length-1]==='x' || rest[rest.length-1]==='y')) megaLetter = rest.pop();
+  return { region, mega, megaLetter, rest };
+}
+
+// Variantes officielles d'une espèce (mises en cache ; seul un succès est
+// mémorisé, un échec réseau ne doit pas bloquer les essais suivants).
+const DMG_SPECIES_CACHE = {};
+async function dmgFetchSpeciesVarieties(speciesSlug){
+  if(DMG_SPECIES_CACHE[speciesSlug]) return DMG_SPECIES_CACHE[speciesSlug];
+  try{
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${speciesSlug}`);
+    if(!res.ok) return null;
+    const data = await res.json();
+    const list = (data.varieties||[])
+      .map(v=>({ name: v.pokemon && v.pokemon.name, isDefault: !!v.is_default }))
+      .filter(v=>v.name);
+    list.evolutionUrl = data.evolution_chain && data.evolution_chain.url ? data.evolution_chain.url : null;
+    if(list.length) DMG_SPECIES_CACHE[speciesSlug] = list;
+    return list.length ? list : null;
+  }catch(e){ return null; }
+}
+
+// Types / stats de base / talents d'un Pokémon (ou d'une forme) en UNE seule
+// requête mise en cache — fetchPokemonTypes/Stats/Abilities refaisaient la
+// même requête 3 fois pour tout nom absent de la liste globale (donc pour
+// toutes les formes), et masquaient un nom inconnu derrière un type "normal".
+const DMG_POKEMON_CACHE = {};
+async function dmgFetchPokemonData(slug){
+  const key = String(slug||'').toLowerCase().trim().replace(/[^a-z0-9-]/g,'');
+  if(!key) return null;
+  if(DMG_POKEMON_CACHE[key]) return DMG_POKEMON_CACHE[key];
+  try{
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${key}`);
+    if(!res.ok){
+      // Certaines espèces n'existent sous aucun nom "court" côté PokeAPI : seule
+      // leur variante par défaut a une fiche (ex. "basculin" -> "basculin-red-
+      // striped", "urshifu" -> "urshifu-single-strike", "lycanroc" ->
+      // "lycanroc-midday"). On retombe alors sur la variante par défaut de l'espèce.
+      const vars = await dmgFetchSpeciesVarieties(key);
+      const def = vars && vars.find(v=>v.isDefault);
+      if(def && def.name !== key){
+        const viaDefault = await dmgFetchPokemonData(def.name);
+        if(viaDefault) DMG_POKEMON_CACHE[key] = viaDefault;
+        return viaDefault;
+      }
+      return null;
+    }
+    const data = await res.json();
+    const byKey = {};
+    (data.stats||[]).forEach(s=>{ byKey[s.stat.name] = s.base_stat; });
+    const out = {
+      slug: key,
+      species: data.species && data.species.name ? data.species.name : null,
+      types: (data.types||[]).map(t=>t.type.name),
+      stats: {
+        hp: byKey['hp']||0, atk: byKey['attack']||0, def: byKey['defense']||0,
+        spa: byKey['special-attack']||0, spd: byKey['special-defense']||0, spe: byKey['speed']||0,
+      },
+      abilities: (data.abilities||[]).map(a=>({ name:a.ability?.name, hidden:!!a.is_hidden })).filter(a=>a.name),
+      // Attaques que ce Pokémon (cette forme) peut apprendre : sert à corriger
+      // un nom d'attaque mal lu par l'OCR ("Surt" -> "surf").
+      moves: (data.moves||[]).map(m=>m.move && m.move.name).filter(Boolean),
+    };
+    DMG_POKEMON_CACHE[key] = out;
+    return out;
+  }catch(e){ return null; }
+}
+
+// Nom saisi à la main -> slug PokeAPI. Sans mot de forme : le nom tel quel
+// (aucune requête en plus, comportement inchangé). Avec "alolan"/"galarian"/
+// "hisuian"/"paldean"/"mega" : on cherche la variante correspondante.
+async function dmgResolvePokemonSlug(input){
+  const p = dmgParseTypedPokemonName(input);
+  if(!p.rest.length) return { slug:'', form:null, note:'' };
+  if(!p.region && !p.mega) return { slug:p.rest.join('-'), form:null, note:'' };
+
+  // Espèce de base : on essaie le nom entier, puis des préfixes plus courts
+  // (les mots restants servent alors à départager, ex. "tauros paldean blaze").
+  let base = null, varieties = null, qualifiers = [];
+  for(let n=p.rest.length; n>=1; n--){
+    const candidate = p.rest.slice(0,n).join('-');
+    const v = await dmgFetchSpeciesVarieties(candidate);
+    if(v){ base = candidate; varieties = v; qualifiers = p.rest.slice(n); break; }
+  }
+  if(!base){
+    // PokeAPI injoignable ou espèce inconnue : on tente le slug direct, qui
+    // fonctionne pour la plupart des formes ("raichu-alola").
+    const direct = p.rest.join('-') + (p.region ? `-${p.region}` : (p.megaLetter ? `-mega-${p.megaLetter}` : '-mega'));
+    return { slug:direct, form:p.region || 'mega', note:'' };
+  }
+
+  if(p.region){
+    const prefix = `${base}-${p.region}`;
+    // Les variantes "-cap" (Pikachu casquettes) sont purement cosmétiques.
+    const extras = DMG_REGION_EXTRA_FORMS[p.region] || [];
+    const matches = varieties.filter(v => ((v.name===prefix || v.name.startsWith(prefix+'-')) && !/-cap$/.test(v.name)) || extras.includes(v.name));
+    if(!matches.length){
+      return { slug:base, form:null, note:`${base} n'a pas de forme ${DMG_REGION_LABELS[p.region]} — forme de base chargée.` };
+    }
+    const best = (qualifiers.length && matches.find(v=>qualifiers.every(q=>v.name.includes(q)))) || matches[0];
+    return { slug:best.name, form:p.region, note:'' };
+  }
+
+  const target = p.megaLetter ? `${base}-mega-${p.megaLetter}` : `${base}-mega`;
+  const exact = varieties.find(v=>v.name===target);
+  if(exact) return { slug:exact.name, form:'mega', note:'' };
+  const megas = varieties.filter(v=>/-mega(-[xy])?$/.test(v.name));
+  if(!p.megaLetter && megas.length>1){
+    return { slug:base, form:null, note:`Plusieurs Méga-évolutions pour ${base} : précise X ou Y (ex. « mega ${base} x »).` };
+  }
+  return { slug:base, form:null, note:`Pas de Méga-évolution${p.megaLetter?' '+p.megaLetter.toUpperCase():''} pour ${base} — forme de base chargée.` };
+}
+
+/* ---------------------------------------------------------------------
+   MENU "FORME" : toutes les formes d'une espèce (Raticate / Raticate d'Alola,
+   Gardevoir / Méga-Gardevoir, Palkia / Palkia Origin...), d'après la liste
+   officielle des variantes de PokeAPI (la même que pour la saisie "raichu alolan").
+   Choisir une forme remplace UNIQUEMENT les stats de base, les types, les talents
+   possibles et les attaques apprenables : niveau, nature, IV/EV, modifications de
+   combat et statut sont conservés tels quels.
+--------------------------------------------------------------------- */
+// Variantes sans intérêt pour un combat (cosmétiques ou hors règles) : casquettes et
+// tenues de Pikachu, Gigamax, Totems, formes "Let's Go"...
+const DMG_FORM_EXCLUDE = /(^|-)(gmax|eternamax|totem|starter|cosplay|rock-star|belle|pop-star|phd|libre|cap|world-cap|partner-cap|original-cap)(-|$)/;
+const DMG_FORM_REGION_ADJ = { alola:'Alolan', galar:'Galarian', hisui:'Hisuian', paldea:'Paldean' };
+const dmgTitleCase = str => String(str||'').split(/[\s-]+/).filter(Boolean).map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+
+// "raticate-alola" -> "Alolan Raticate" ; "gardevoir-mega" -> "Mega Gardevoir" ;
+// "palkia-origin" -> "Palkia (Origin Forme)" ; "deoxys-attack" -> "Deoxys (Attack)"
+function dmgFormLabel(species, slug){
+  const speciesDisp = dmgTitleCase(species);
+  const suffix = slug.startsWith(species + '-') ? slug.slice(species.length + 1) : '';
+  if(!suffix) return speciesDisp;
+  const tokens = suffix.split('-');
+  if(tokens.includes('mega')){
+    const extra = tokens.filter(t => t !== 'mega').map(t => t.toUpperCase());
+    return `Mega ${speciesDisp}${extra.length ? ' ' + extra.join(' ') : ''}`;
+  }
+  const region = tokens.find(t => DMG_FORM_REGION_ADJ[t]);
+  if(region){
+    const rest = tokens.filter(t => t !== region).map(dmgTitleCase);
+    return `${DMG_FORM_REGION_ADJ[region]} ${speciesDisp}${rest.length ? ` (${rest.join(' ')})` : ''}`;
+  }
+  if(tokens.includes('primal')) return `Primal ${speciesDisp}`;
+  const sfx = tokens.map(dmgTitleCase).join(' ');
+  return `${speciesDisp} (${['origin','altered','therian','incarnate'].includes(suffix) ? sfx + ' Forme' : sfx})`;
+}
+
+// Espèce d'un Pokémon chargé + liste de ses variantes. L'espèce est donnée par PokeAPI ;
+// à défaut on retire des segments de fin du nom ("raichu-alola" -> "raichu").
+async function dmgResolveSpecies(slug){
+  const data = await dmgFetchPokemonData(slug);
+  const currentSlug = (data && data.slug) || slug;
+  if(data && data.species){
+    const v = await dmgFetchSpeciesVarieties(data.species);
+    if(v) return { species:data.species, varieties:v, currentSlug };
+  }
+  const parts = String(slug).split('-');
+  for(let n=parts.length; n>=1; n--){
+    const cand = parts.slice(0,n).join('-');
+    const v = await dmgFetchSpeciesVarieties(cand);
+    if(v) return { species:cand, varieties:v, currentSlug };
+  }
+  return null;
+}
+
+function dmgBuildForms(res){
+  const list = res.varieties.filter(v => v.isDefault || v.name === res.currentSlug || !DMG_FORM_EXCLUDE.test(v.name));
+  list.sort((a,b) => (b.isDefault?1:0) - (a.isDefault?1:0));   // la forme de base en premier
+  return list.map(v => ({ slug:v.name, label:dmgFormLabel(res.species, v.name) }));
+}
+
+function dmgFormRowHtml(fighter, prefix){
+  if(!fighter.forms || fighter.forms.length < 2) return '';
+  return `<div class="dmg-field" style="margin-bottom:8px;"><label>Forme</label>
+    <select id="${prefix}FormSelect">${fighter.forms.map(f => `<option value="${escapeHtml(f.slug)}" ${f.slug===fighter.formSlug ? 'selected' : ''}>${escapeHtml(f.label)}</option>`).join('')}</select>
+  </div>`;
+}
+
+function dmgBindFormSelect(fighter, prefix){
+  const sel = document.getElementById(`${prefix}FormSelect`);
+  if(sel) sel.addEventListener('change', () => dmgSwitchForm(fighter, prefix, sel.value));
+}
+
+function dmgRenderFormRow(fighter, prefix){
+  const row = document.getElementById(`${prefix}FormRow`);
+  if(!row) return;
+  row.innerHTML = dmgFormRowHtml(fighter, prefix);
+  dmgBindFormSelect(fighter, prefix);
+}
+
+// Cherche les formes du Pokémon chargé (une seule fois par Pokémon) puis affiche le menu.
+function dmgEnsureForms(fighter, prefix){
+  if(!fighter.baseStats){
+    if(fighter.forms && fighter.forms.length){ fighter.forms = []; fighter.formsKey = ''; }
+    return;
+  }
+  const slug = fighter.slug || dmgNormalizeTypedName(fighter.name).replace(/ /g,'-');
+  if(!slug || fighter.formsKey === slug) return;
+  fighter.formsKey = slug;
+  (async () => {
+    let res = null;
+    try{ res = await dmgResolveSpecies(slug); }catch(e){ res = null; }
+    if(fighter.formsKey !== slug) return;       // un autre Pokémon a été chargé entre-temps
+    const forms = res ? dmgBuildForms(res) : [];
+    fighter.forms = forms.length > 1 ? forms : [];
+    fighter.formSlug = res ? res.currentSlug : slug;
+    if((prefix === 'dmgAtk' ? dmgAttacker : dmgDefender) === fighter) dmgRenderFormRow(fighter, prefix);
+  })();
+}
+
+const DMG_MEGA_RE = /-mega(-[xy])?$/;
+const dmgSpeciesRoot = slug => String(slug||'').toLowerCase().split('-')[0];
+const dmgRerenderSide = prefix => {
+  if(prefix === 'dmgAtk'){ renderDmgAttackerFields(); renderDmgMoveFields(); }
+  else renderDmgDefenderFields();
+  renderDmgResult();
+};
+// Données du Pokémon tel qu'il est actuellement chargé (forme normale ou autre).
+const dmgCurrentData = fighter => ({
+  slug: fighter.slug || dmgNormalizeTypedName(fighter.name).replace(/ /g,'-'),
+  types: fighter.types, stats: fighter.baseStats, abilities: fighter.abilities, moves: fighter.learnableMoves || [],
+});
+
+// Forme de base (par défaut) de l'espèce d'une Méga-forme.
+async function dmgBaseOfMega(megaData){
+  const res = await dmgResolveSpecies(megaData.slug);
+  const def = res && res.varieties.find(v => v.isDefault);
+  return def ? await dmgFetchPokemonData(def.name) : null;
+}
+
+// Applique la Méga-évolution PAR-DESSUS la forme normale `baseData` (celle que la
+// fiche affiche) : stats de base, types, talent et attaques apprenables passent à
+// la Méga-forme ; niveau, nature, IV/EV, modifications de combat et statut ne bougent
+// pas. La forme normale est mémorisée (megaBase) : c'est elle qui sert à lire et à
+// vérifier une capture, et à revenir en arrière en décochant. S'il y a deux Méga
+// (X et Y), on prend celle demandée, sinon la première ; l'autre est dans le menu Forme.
+async function dmgApplyMegaToFighter(fighter, baseData, hint, prevAbility){
+  const res = await dmgResolveSpecies(baseData.slug);
+  const megas = res ? res.varieties.filter(v => DMG_MEGA_RE.test(v.name)).map(v => v.name) : [];
+  const pick = megas.length ? ([hint, fighter.megaSlug].find(h => h && megas.includes(h)) || megas[0]) : null;
+  const md = pick ? await dmgFetchPokemonData(pick) : null;
+  if(!md){
+    fighter.mega = false; fighter.megaBase = null;
+    const nm = baseData.slug || fighter.name || 'ce Pokémon';
+    return { ok:false, note:`${nm} n'a pas de Méga-évolution : case « Méga » ignorée` };
+  }
+  fighter.megaPrevAbility = prevAbility != null ? prevAbility : fighter.ability;
+  fighter.megaBase = { slug: baseData.slug, data: baseData };
+  fighter.mega = true;
+  fighter.megaSlug = pick;
+  fighter.slug = pick; fighter.formSlug = pick; fighter.name = pick;
+  fighter.types = md.types; fighter.baseStats = md.stats; fighter.abilities = md.abilities;
+  fighter.learnableMoves = md.moves || [];
+  const names = md.abilities.map(a => formatAbilityDisplayName(a.name));
+  if(!names.includes(fighter.ability)) fighter.ability = names[0] || '';
+  return { ok:true, label: dmgFormLabel(res.species, pick), multiple: megas.length > 1 };
+}
+
+// Case "Méga-évolué".
+async function dmgToggleMega(fighter, prefix, checked){
+  if(!fighter.baseStats){
+    // Aucun Pokémon chargé : on mémorise l'intention, appliquée au prochain chargé.
+    fighter.mega = checked;
+    dmgRerenderSide(prefix);
+    return;
+  }
+  if(checked){
+    const r = await dmgApplyMegaToFighter(fighter, dmgCurrentData(fighter), '', fighter.ability);
+    fighter.loadNote = r.ok
+      ? { cls:'ok', text:`Méga-évolution appliquée : ${r.label}.${r.multiple ? ' L\'autre Méga est dans le menu Forme.' : ''}` }
+      : { cls:'warn', text:r.note };
+    dmgRerenderSide(prefix);
+    return;
+  }
+  // Décoché : retour à la forme normale (avec le talent d'avant la Méga).
+  // (dmgSwitchForm a besoin de savoir que le Pokémon ÉTAIT Méga pour restituer son
+  // talent d'avant : on ne remet donc pas fighter.mega à false avant de l'appeler.)
+  let base = fighter.megaBase && fighter.megaBase.data;
+  if(!base) base = await dmgBaseOfMega(dmgCurrentData(fighter));
+  if(base) await dmgSwitchForm(fighter, prefix, base.slug);
+  else { fighter.mega = false; fighter.megaBase = null; dmgRerenderSide(prefix); }
+}
+
+async function dmgSwitchForm(fighter, prefix, slug){
+  const data = await dmgFetchPokemonData(slug);
+  if(!data){
+    fighter.loadNote = { cls:'err', text:`Forme « ${slug} » introuvable sur PokeAPI.` };
+  } else {
+    const label = ((fighter.forms || []).find(f => f.slug === slug) || {}).label || slug;
+    const isMega = DMG_MEGA_RE.test(slug);
+    const wasMega = fighter.mega, prevAbility = fighter.megaPrevAbility;
+    // Normale -> Méga par le menu : on garde la forme normale en mémoire (comme la case).
+    if(isMega && !wasMega){
+      fighter.megaBase = { slug: dmgCurrentData(fighter).slug, data: dmgCurrentData(fighter) };
+      fighter.megaPrevAbility = fighter.ability;
+    }
+    if(isMega){ fighter.mega = true; fighter.megaSlug = slug; }
+    else { fighter.mega = false; fighter.megaBase = null; }
+    fighter.slug = data.slug;
+    fighter.formSlug = data.slug;
+    fighter.formsKey = data.slug;               // même espèce : la liste des formes reste valable
+    fighter.name = data.slug;
+    fighter.types = data.types;
+    fighter.baseStats = data.stats;
+    fighter.abilities = data.abilities;
+    fighter.learnableMoves = data.moves || [];
+    // Le talent reste le même s'il existe aussi dans la nouvelle forme ; en quittant une
+    // Méga, on retrouve celui d'avant ; sinon le premier de la forme.
+    const names = data.abilities.map(a => formatAbilityDisplayName(a.name));
+    if(wasMega && !isMega && prevAbility && names.includes(prevAbility)) fighter.ability = prevAbility;
+    else if(!names.includes(fighter.ability)) fighter.ability = names[0] || '';
+    fighter.loadNote = { cls:'ok', text:`Forme chargée : ${label} (${data.slug}).` };
+  }
+  dmgRerenderSide(prefix);
+}
+
+// Eviolite n'agit que sur un Pokémon qui peut encore évoluer : on le demande à PokeAPI
+// (chaîne d'évolution de l'espèce). Si la réponse est impossible, l'objet est appliqué
+// avec la mention "évolution non vérifiée" plutôt que d'être ignoré en silence.
+const DMG_EVO_CACHE = {};
+async function dmgFetchCanEvolve(slug){
+  const res = await dmgResolveSpecies(slug);
+  if(!res) return undefined;
+  if(Object.prototype.hasOwnProperty.call(DMG_EVO_CACHE, res.species)) return DMG_EVO_CACHE[res.species];
+  const url = res.varieties.evolutionUrl;
+  if(!url) return undefined;
+  try{
+    const r = await fetch(url);
+    if(!r.ok) return undefined;
+    const chain = (await r.json()).chain;
+    const find = node => {
+      if(node.species && node.species.name === res.species) return node;
+      for(const n of (node.evolves_to || [])){ const f = find(n); if(f) return f; }
+      return null;
+    };
+    const node = chain ? find(chain) : null;
+    if(!node) return undefined;
+    return (DMG_EVO_CACHE[res.species] = (node.evolves_to || []).length > 0);
+  }catch(e){ return undefined; }
+}
+
+function dmgEnsureCanEvolve(fighter){
+  if(fighter.item !== 'Eviolite' || !fighter.baseStats) return;
+  const slug = fighter.slug || dmgNormalizeTypedName(fighter.name).replace(/ /g,'-');
+  if(!slug || fighter.canEvolveKey === slug) return;
+  fighter.canEvolveKey = slug;
+  fighter.canEvolve = undefined;
+  (async () => {
+    const v = await dmgFetchCanEvolve(slug);
+    if(fighter.canEvolveKey !== slug || fighter.item !== 'Eviolite') return;
+    fighter.canEvolve = v;
+    renderDmgResult();
+    const prefix = fighter === dmgAttacker ? 'dmgAtk' : (fighter === dmgDefender ? 'dmgDef' : null);
+    if(prefix) dmgRefreshStatsLine(fighter, prefix);
+  })();
+}
+
+async function dmgLoadFighterFromName(fighter, name){
+  // Espèce chargée avant ce chargement (pour savoir si la case Méga suit ou non).
+  const prevRoot = dmgSpeciesRoot(fighter.megaBase ? fighter.megaBase.slug : (fighter.slug || fighter.name));
+  const resolved = await dmgResolvePokemonSlug(name);
+  const slug = resolved.slug || String(name).trim();
+  const data = await dmgFetchPokemonData(slug);
+
+  // Si on affiche autre chose que ce qui a été tapé (forme trouvée, ou repli
+  // sur la forme de base), le champ montre le nom réellement chargé.
+  fighter.name = (resolved.form || resolved.note) ? slug : name;
+
+  if(!data){
+    fighter.types = [];
+    fighter.baseStats = null;
+    fighter.abilities = [];
+    fighter.learnableMoves = [];
+    fighter.ability = '';
+    fighter.loadNote = { cls:'err', text:`« ${name} » introuvable sur PokeAPI — vérifie l'orthographe (en anglais, ex. « raichu alolan »).` };
+    return;
+  }
+  fighter.types = data.types;
+  fighter.baseStats = data.stats;
+  fighter.abilities = data.abilities;
+  fighter.learnableMoves = data.moves || [];
+  fighter.slug = data.slug || '';
+  fighter.ability = data.abilities.length ? formatAbilityDisplayName(data.abilities[0].name) : '';
+  if(resolved.note) fighter.loadNote = { cls:'warn', text:resolved.note };
+  else if(resolved.form) fighter.loadNote = { cls:'ok', text:`Forme ${resolved.form==='mega' ? 'Méga' : DMG_REGION_LABELS[resolved.form]} chargée (${slug}).` };
+  else fighter.loadNote = null;
+
+  // Méga : demandée par la saisie ("mega gardevoir") ou par la case cochée. La case ne suit
+  // pas si on charge une AUTRE espèce que celle déjà chargée (on repart sans Méga).
+  let wantMega = !!fighter.mega, megaHint = '', baseData = data;
+  if(resolved.form === 'mega'){
+    const b = await dmgBaseOfMega(data);
+    if(b){ baseData = b; megaHint = data.slug; wantMega = true; }
+  } else if(wantMega && prevRoot && dmgSpeciesRoot(data.slug) !== prevRoot){
+    wantMega = false;
+  }
+  fighter.mega = false; fighter.megaBase = null;
+  if(wantMega){
+    // Le talent d'avant la Méga est celui de la forme normale qu'on vient de charger.
+    fighter.types = baseData.types; fighter.baseStats = baseData.stats; fighter.abilities = baseData.abilities; fighter.learnableMoves = baseData.moves || [];
+    fighter.ability = baseData.abilities.length ? formatAbilityDisplayName(baseData.abilities[0].name) : '';
+    const r = await dmgApplyMegaToFighter(fighter, baseData, megaHint, fighter.ability);
+    fighter.loadNote = r.ok
+      ? { cls:'ok', text:`Méga-évolution appliquée : ${r.label}.${r.multiple && !megaHint ? ' L\'autre Méga est dans le menu Forme.' : ''}` }
+      : { cls:'warn', text:r.note };
+  }
+}
+
+function dmgLoadFighterFromOwnedPokemon(fighter, p){
+  fighter.name = p.name;
+  fighter.slug = '';
+  fighter.mega = false; fighter.megaBase = null;
+  fighter.learnableMoves = [];
+  fighter.types = Array.isArray(p.types) ? p.types : [];
+  fighter.baseStats = p.natureStats || null;
+  fighter.abilities = p.natureAbilities || [];
+  fighter.ability = (p.natureAbilities && p.natureAbilities.length) ? formatAbilityDisplayName(p.natureAbilities[0].name) : '';
+}
+
+/* ---------------------------------------------------------------------
+   CAPTURE DE LA FICHE POKÉMON (attaquant uniquement) — colle la carte
+   "Nom / Niveau / Talent / Nature / Moves / stats colorées" (voir la
+   capture fournie) et on en déduit automatiquement : nom, niveau, nature,
+   talent, les 4 capacités (+ PP), et pour chaque stat l'IV (nombre orange)
+   et l'EV (nombre bleu) — exactement les mêmes colonnes que montre la
+   fiche en jeu. Le stat final (blanc, à gauche) n'est pas utilisé pour le
+   calcul : on recalcule nous-mêmes la stat finale à partir de IV/EV/
+   nature/niveau comme pour tout le reste du calculateur, donc on n'a pas
+   besoin de le lire.
+
+   Réutilise initIvOcr() (même worker Tesseract, même config) et les
+   fonctions déjà éprouvées par l'IV Scanner (rgbToHsv, isOrangePixel,
+   extractIvWords, normalizeIvLabelText, calculateSimilarity) plutôt que
+   de redéfinir une 2e pipeline OCR de zéro.
+
+   Tout ce qui est détecté atterrit dans les champs normaux du formulaire
+   attaquant (déjà éditables) : une valeur mal lue reste donc corrigeable
+   à la main en un clic, exactement comme pour l'IV Scanner.
+--------------------------------------------------------------------- */
+
+// Bleu des valeurs d'EV sur la fiche (calibré sur la capture fournie :
+// RGB ~ (100,190,230) -> teinte HSV ~198°, loin de l'orange des IV).
+function isBlueStatPixel(r,g,b){
+  const [h,s,v] = rgbToHsv(r,g,b);
+  return h>=175 && h<=225 && s>=0.25 && v>=0.35;
+}
+
+// Généralisation de bboxOrangeRatio à n'importe quel test de couleur.
+function bboxColorRatio(imageData, width, height, x0,y0,x1,y1, testFn){
+  x0=Math.max(0,Math.floor(x0)); y0=Math.max(0,Math.floor(y0));
+  x1=Math.min(width,Math.ceil(x1)); y1=Math.min(height,Math.ceil(y1));
+  let total=0, hit=0;
+  const data=imageData.data;
+  for(let y=y0;y<y1;y++){
+    for(let x=x0;x<x1;x++){
+      const i=(y*width+x)*4;
+      if(data[i+3] < 10) continue;
+      total++;
+      if(testFn(data[i],data[i+1],data[i+2])) hit++;
+    }
+  }
+  return { ratio: total>0 ? hit/total : 0, count: hit };
+}
+
+// Comme splitWordDigitsByColor (IV Scanner), mais à 3 classes de couleur :
+// 'orange' (IV), 'blue' (EV), 'white' (stat finale, ignorée). Le texte
+// reconnu reste celui du mot ENTIER par Tesseract (fiable) ; seule la
+// couleur de chaque bbox de symbole sert à découper "249 04 000" quand
+// l'OCR les colle ("2490 4000" etc.).
+function splitStatDigitsByColor(word, rawText, imageData, width, height){
+  const syms = Array.isArray(word.symbols) ? word.symbols : null;
+  if(!syms || !syms.length || syms.length!==rawText.length) return null;
+
+  const chars=[];
+  for(let i=0;i<rawText.length;i++){
+    const ch=rawText[i];
+    const s=syms[i];
+    if(!/[0-9]/.test(ch) || !s || !s.bbox){ chars.push(null); continue; }
+    let { x0,y0,x1,y1 } = s.bbox;
+    if(!(x1>x0) || !(y1>y0)){ chars.push(null); continue; }
+    // Garde-fou : bbox de symbole anormalement large (vu en pratique sur un
+    // vrai "8" dont Tesseract a étiré la bbox jusqu'au bord du mot suivant,
+    // 5x plus large que haute) — on la recadre à une largeur de chiffre
+    // plausible pour ne pas échantillonner la couleur d'un autre chiffre
+    // voisin par erreur.
+    if(x1-x0 > (y1-y0)*2) x1 = x0 + Math.round((y1-y0)*1.3);
+    const orange = bboxColorRatio(imageData,width,height,x0,y0,x1,y1,isOrangePixel);
+    const blue = bboxColorRatio(imageData,width,height,x0,y0,x1,y1,isBlueStatPixel);
+    let cls='white';
+    // Seuil de ratio abaissé (0.15 -> 0.08) : vérifié sur une vraie capture,
+    // un "1" (trait fin) n'occupe que ~14% de sa propre bbox en pixels
+    // colorés (beaucoup de fond autour d'un trait étroit) et ratait le
+    // seuil précédent malgré 119 pixels oranges bien réels — le nombre de
+    // pixels (count) reste le vrai garde-fou contre le bruit.
+    if(orange.ratio>=0.08 && orange.count>=8) cls='orange';
+    else if(blue.ratio>=0.08 && blue.count>=8) cls='blue';
+    chars.push({ ch, x0,y0,x1,y1, cls });
+  }
+
+  function finishRun(items){
+    return {
+      cls: items[0].cls,
+      text: items.map(it=>it.ch).join(''),
+      x0: Math.min(...items.map(it=>it.x0)), x1: Math.max(...items.map(it=>it.x1)),
+      y0: Math.min(...items.map(it=>it.y0)), y1: Math.max(...items.map(it=>it.y1)),
+    };
+  }
+  const runs=[]; let cur=null;
+  for(const c of chars){
+    if(!c){ if(cur){ runs.push(finishRun(cur)); cur=null; } continue; }
+    if(cur && cur[0].cls===c.cls) cur.push(c);
+    else { if(cur) runs.push(finishRun(cur)); cur=[c]; }
+  }
+  if(cur) runs.push(finishRun(cur));
+  return runs;
+}
+
+// Libellés de stats tels qu'affichés sur la fiche (anglais, PRO) — ATTENTION :
+// "SPD" sur CETTE fiche désigne la Vitesse (Speed), jamais la Défense
+// Spéciale ; même piège que IV_LABEL_ABBREVIATIONS plus haut, donc même
+// prudence sur le mapping vers nos clés internes hp/atk/def/spa/spd/spe.
+// Volontairement SEULEMENT l'abréviation telle qu'affichée dans la grille
+// stats (jamais "attack"/"speed" en toutes lettres) : sur plusieurs vraies
+// captures, le mot complet "Speed" apparaît aussi dans le nom du talent
+// ("Speed Boost") ou d'une attaque ("Speed Swap"), ailleurs sur la fiche,
+// et se faisait alors passer pour le libellé de la ligne de stats.
+const DMG_CARD_STAT_LABELS = {
+  atk: ['atk'], def: ['def'],
+  spe: ['spd'], // "SPD" = Vitesse sur cette fiche
+  spa: ['spatk'],
+  spd: ['spdef'], // Défense Spéciale
+  hp: ['hp'],
+};
+
+function dmgCardLabelMatch(text){
+  const norm = normalizeIvLabelText(text);
+  if(!norm) return null;
+  let best=null, bestScore=0;
+  for(const key of Object.keys(DMG_CARD_STAT_LABELS)){
+    for(const variant of DMG_CARD_STAT_LABELS[key]){
+      const a=norm.replace(/\s+/g,''), b=variant.replace(/\s+/g,'');
+      let score;
+      if(a===b) score=1;
+      else if(b.length<=2){
+        // Libellés très courts ("hp") : exiger l'égalité stricte. Une
+        // tolérance à 1 caractère près matchait n'importe quel fragment OCR
+        // de 1-2 lettres (ex: "Ip:" de l'ID, "*P" du XP) — vérifié sur une
+        // vraie capture, ça polluait la détection de toute la colonne stats.
+        score = 0;
+      } else if(a.length<=6 && b.length<=6){
+        const dist=levenshteinDistance(a,b);
+        score = dist<=1 && Math.abs(a.length-b.length)<=1 ? 0.9 : 0;
+      } else score = calculateSimilarity(a,b);
+      if(score>bestScore){ bestScore=score; best=key; }
+    }
+  }
+  return bestScore>=0.85 ? best : null;
+}
+
+// Regroupe les mots OCR en lignes par proximité verticale (même principe
+// que pairIvValues, factorisé ici car réutilisé pour nom/niveau/nature/
+// talent/moves, pas seulement les 6 lignes de stats).
+function dmgGroupWordsIntoRows(words){
+  if(!words.length) return [];
+  const heights=words.map(w=>w.y1-w.y0).filter(h=>h>0).sort((a,b)=>a-b);
+  const medianH=heights.length ? heights[Math.floor(heights.length/2)] : 14;
+  const rowTol=Math.max(7, medianH*0.65);
+  const rows=[];
+  for(const w of [...words].sort((a,b)=>((a.y0+a.y1)/2)-((b.y0+b.y1)/2))){
+    const cy=(w.y0+w.y1)/2;
+    let row=rows.find(r=>Math.abs(r.cyAvg-cy)<=rowTol);
+    if(!row){ row={ words:[], cyAvg:cy }; rows.push(row); }
+    row.words.push(w);
+    row.cyAvg=row.words.reduce((s,x)=>s+(x.y0+x.y1)/2,0)/row.words.length;
+  }
+  for(const row of rows) row.words.sort((a,b)=>a.x0-b.x0);
+  return rows;
+}
+
+// Nom lu sur la fiche -> nom d'espèce, validé contre la liste Pokémon de
+// l'app (rejette le bruit OCR et le texte de l'interface). En plus de la
+// correspondance approchée habituelle, gère les espèces que la liste stocke
+// avec un suffixe de forme alors que la fiche n'affiche que l'espèce :
+// "Basculin" (liste : basculin-red-striped), "Urshifu" (urshifu-single-strike),
+// "Lycanroc" (lycanroc-midday)... On renvoie alors le nom d'ESPÈCE ("Basculin"),
+// que la suite du chargement sait résoudre. Seuls les préfixes UNIQUES comptent
+// ("tapu", "iron" sont partagés par plusieurs Pokémon : écartés).
+function dmgMatchPokemonNameFromCard(candidate){
+  const direct = getBestMatchingPokemonName(candidate, 0.75);
+  if(direct) return direct;
+  const low = String(candidate).toLowerCase();
+  if(low.length<5 || low.includes('-')) return null;
+  const count = {};
+  const dbNames = new Set(globalPokemonDatabase.map(p=>p.name));
+  for(const p of globalPokemonDatabase){
+    if(!p.name.includes('-')) continue;
+    const prefix = p.name.split('-')[0];
+    count[prefix] = (count[prefix]||0) + 1;
+  }
+  let best = null, bestScore = 0;
+  for(const prefix of Object.keys(count)){
+    if(count[prefix]!==1 || prefix.length<5 || dbNames.has(prefix)) continue;
+    const score = calculateSimilarity(low, prefix);
+    if(score>bestScore){ bestScore = score; best = prefix; }
+  }
+  return (best && bestScore>=0.85) ? best.charAt(0).toUpperCase()+best.slice(1) : null;
+}
+
+function parseDmgAttackerCard(data, canvas){
+  const width=canvas.width, height=canvas.height;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  const imageData=ctx.getImageData(0,0,width,height);
+  const rawWords=extractIvWords(data);
+
+  const words=[];
+  for(const w of (rawWords||[])){
+    if(!w || !w.text) continue;
+    const text=String(w.text).trim();
+    if(!text || !w.bbox) continue;
+    const { x0,y0,x1,y1 } = w.bbox;
+    if(!(x1>x0) || !(y1>y0)) continue;
+    words.push({ text, rawText:String(w.text), symbols:w.symbols, x0,y0,x1,y1 });
+  }
+  const rows = dmgGroupWordsIntoRows(words);
+  const result = {
+    name:null, level:null, nature:null, ability:null,
+    moves:[], stats:{}, statConfidence:{},
+    // Valeur FINALE affichée sur la fiche (le nombre blanc à gauche de l'IV) :
+    // pas utilisée pour le calcul (on recalcule nous-mêmes la stat), mais
+    // précieuse pour reconnaître la bonne FORME d'un Pokémon (voir
+    // dmgPickFormForCard).
+    finals:{},
+    missing:[],
+  };
+
+  if(!rows.length) return result;
+
+  // --- Nom + niveau ---
+  // Le "Lv." stylisé de la fiche est systématiquement mal lu par l'OCR
+  // ("© s00", "2.100", "©1100"...) quel que soit le niveau de zoom (vérifié
+  // avec le vrai moteur Tesseract sur une vraie capture) : exiger ce motif
+  // littéralement ne marche donc JAMAIS en pratique et faisait échouer la
+  // détection à chaque fois. On s'appuie à la place uniquement sur la
+  // validation contre le vrai Pokédex (même fonction que la détection
+  // automatique de rencontre) : nettement plus robuste, et ça rejette déjà
+  // tout seul un faux positif comme le titre d'un panneau de l'app.
+  //
+  // On essaie les 3 premières lignes du bloc (le nom n'est pas toujours
+  // formellement la toute première si la capture inclut un peu de contexte
+  // au-dessus), et pour chacune, le premier "mot" alphabétique assez long
+  // pour être un nom plausible (on ignore les fragments de 1-2 lettres,
+  // souvent des bouts de symboles mal lus comme "©" lu "e"/"c"/"x").
+  // On teste aussi les noms en 2-3 mots ("Mr. Mime", "Tapu Koko", "Iron
+  // Valiant", "Type: Null" : la liste interne les écrit avec un tiret) en
+  // collant les mots voisins, du plus long au plus court.
+  const cleanNameWord = t => t.replace(/[^A-Za-zÀ-ÿ'’\-]/g,'');
+  for(let i=0; i<Math.min(3, rows.length) && !result.name; i++){
+    const rw = rows[i].words;
+    for(let start=0; start<rw.length && !result.name; start++){
+      for(const len of [3,2,1]){
+        const parts = rw.slice(start, start+len).map(w=>cleanNameWord(w.text));
+        if(parts.length<len || parts.some(x=>!x)) continue;
+        const candidate = parts.join('-');
+        if(len===1 ? candidate.length<4 : candidate.length<5) continue;
+        const matched = dmgMatchPokemonNameFromCard(candidate);
+        if(matched){ result.name = matched; result.nameRowIdx = i; break; }
+      }
+    }
+  }
+  // Niveau : un nombre isolé de 1 à 3 chiffres, non accolé à d'autres
+  // chiffres (pour ignorer l'ID à 9 chiffres plus loin sur la même ligne),
+  // cherché sur la ligne du nom si trouvée, sinon sur les 3 premières lignes.
+  {
+    // Sans ligne de nom reconnue (recadrage "attaques + stats"), on ne cherche PAS
+    // de niveau : les premières lignes contiennent alors les PP des attaques
+    // ("11/15", "25/25") qui se faisaient passer pour un niveau. Il est alors
+    // déduit des stats finales (voir dmgInferLevelAndNature).
+    const levelRows = result.nameRowIdx!=null ? [rows[result.nameRowIdx]] : [];
+    for(const row of levelRows){
+      const rowText = row.words.map(w=>w.text).join(' ');
+      const lvNum = rowText.match(/(?<!\d)(\d{1,3})(?!\d)/);
+      if(lvNum){
+        const n = parseInt(lvNum[1],10);
+        if(n>=1 && n<=100){ result.level = n; break; }
+      }
+      // Repli : le "Lv." stylisé colle parfois sans espace au chiffre qui
+      // suit (ex. "©1100" pour "Lv.100", le "©" remplaçant "Lv." et le "1"
+      // de tête se soudant au niveau) : on tente alors les 3 puis 2 derniers
+      // chiffres d'un bloc de 4-5 chiffres comme niveau plausible.
+      // IMPORTANT : la même ligne contient aussi l'ID du Pokémon (9 chiffres,
+      // ex. "115631776") — un \d{4,} sans borne haute capturait TOUT ce bloc
+      // et en prenait les 2 derniers chiffres comme "niveau" (ex. 76 au lieu
+      // de 100, vérifié sur un vrai cas). D'où \d{4,5} avec bornes strictes
+      // (ni précédé ni suivi d'un autre chiffre) : un ID à 9 chiffres ne peut
+      // jamais satisfaire ça, quelle que soit la sous-séquence testée.
+      if(result.level==null){
+        const longNum = rowText.match(/(?<!\d)\d{4,5}(?!\d)/);
+        if(longNum){
+          for(const len of [3,2]){
+            const suffix = longNum[0].slice(-len);
+            const n = parseInt(suffix,10);
+            if(n>=1 && n<=100){ result.level=n; result.levelUncertain=true; break; }
+          }
+        }
+      }
+      if(result.level!=null) break;
+    }
+  }
+
+  // --- Nature / Talent ---
+  // La fiche a 2 colonnes à la même hauteur (Exp|Nature, puis Ability|rien) :
+  // un regroupement par ligne seul mélangerait "Current: 1000000XP" (colonne
+  // de gauche) avec "Careful" (colonne de droite, sous "Nature"), toutes les
+  // deux à la même hauteur. On cherche donc le MOT libellé (pas la ligne
+  // entière), puis on ne garde dans la ligne suivante que les mots dont le X
+  // est proche de celui du libellé (même colonne) — on s'arrête au premier
+  // grand saut horizontal pour ne pas re-déborder dans une autre colonne.
+  function findLabelWord(targetNorm){
+    for(let i=0;i<rows.length;i++){
+      for(const w of rows[i].words){
+        const norm = normalizeIvLabelText(w.text.replace(/:$/,''));
+        if(norm===targetNorm || calculateSimilarity(norm,targetNorm)>=0.85) return { rowIdx:i, x0:w.x0, y0:w.y0, y1:w.y1 };
+      }
+    }
+    return null;
+  }
+  // Cherche la valeur dans les quelques lignes suivantes (pas seulement la
+  // toute première après le libellé) : un artefact OCR du sprite/icône
+  // décoratif (ex. "ew", "»~€") peut former une ligne fantôme qui ne
+  // contient rien dans la bonne colonne, décalant la vraie valeur une ligne
+  // plus loin que prévu — vérifié sur une vraie capture. On avance donc
+  // jusqu'à trouver une ligne qui a effectivement quelque chose dans la
+  // colonne du libellé, sans aller chercher trop loin (3 lignes max).
+  function valueInSameColumn(startRowIdx, labelX0){
+    for(let rowIdx=startRowIdx; rowIdx<Math.min(startRowIdx+3, rows.length); rowIdx++){
+      const row = rows[rowIdx];
+      if(!row) continue;
+      const candidates = row.words.filter(w=>w.x0 >= labelX0-20).sort((a,b)=>a.x0-b.x0);
+      if(!candidates.length) continue;
+      const picked=[candidates[0]];
+      for(let i=1;i<candidates.length;i++){
+        if(candidates[i].x0 - picked[picked.length-1].x1 > 50) break; // saut = autre colonne
+        picked.push(candidates[i]);
+      }
+      const text = picked.map(w=>w.text).join(' ').trim();
+      // Rejette un texte trop court/non-alphabétique (typiquement un résidu
+      // OCR d'une icône décorative, ex. "ew", "»~€") plutôt que de
+      // l'accepter comme valeur : une vraie nature/talent fait toujours au
+      // moins 3 lettres.
+      if(text && /^[A-Za-zÀ-ÿ' -]{3,}$/.test(text)) return text;
+    }
+    return '';
+  }
+  const abilityLabel = findLabelWord('ability');
+  if(abilityLabel) result.ability = valueInSameColumn(abilityLabel.rowIdx+1, abilityLabel.x0);
+  const natureLabel = findLabelWord('nature');
+  if(natureLabel) result.nature = valueInSameColumn(natureLabel.rowIdx+1, natureLabel.x0);
+
+  // --- Moves : colonne de gauche, en dessous de "Moves" ---
+  // La fiche n'aligne pas proprement les lignes entre colonnes : "Moves"
+  // partage sa hauteur avec "ATK:", et "Spirit Break" avec "DEF:" (vérifié
+  // sur une vraie capture). Le regroupement par ligne GLOBAL (rows) mélange
+  // donc les 2 colonnes. On filtre d'abord tous les mots à la colonne
+  // "Moves" (X proche du libellé, Y en dessous), puis on les regroupe en
+  // lignes À PART, indépendamment de la colonne stats juste à droite.
+  const movesLabel = findLabelWord('moves');
+  if(movesLabel){
+    // La colonne Moves est large (le nom à gauche, le PP loin à droite) :
+    // plutôt qu'une largeur fixe (trop étroite, ça coupait les PP), on
+    // borne dynamiquement juste avant le début de la colonne des stats
+    // (ATK/DEF/...), détectée via les mêmes libellés que plus bas.
+    // On ignore les candidats trop proches de "Moves" lui-même : un nom
+    // d'attaque peut légitimement contenir un mot qui ressemble à un
+    // libellé de stat (ex. l'attaque "Speed Swap" matche la variante
+    // complète "speed" de la Vitesse — vérifié sur une vraie capture, ça
+    // réduisait la colonne Moves à presque rien). La vraie colonne stats
+    // est toujours largement à droite de la colonne Moves.
+    const statLabelXs = words
+      .map(w=>({ x0:w.x0, key: dmgCardLabelMatch(w.text.replace(/:$/,'')) }))
+      .filter(o=>o.key && o.x0 > movesLabel.x0 + 150);
+    const statsColumnX0 = statLabelXs.length ? Math.min(...statLabelXs.map(o=>o.x0)) : null;
+    const colMinX = movesLabel.x0 - 20;
+    const colMaxX = statsColumnX0!=null ? statsColumnX0-20 : movesLabel.x0+900;
+    const movesColWords = words.filter(w =>
+      w.x0>=colMinX && w.x0<colMaxX && (w.y0+w.y1)/2 > (movesLabel.y0+movesLabel.y1)/2 + 5
+    );
+    const moveRows = dmgGroupWordsIntoRows(movesColWords);
+    for(const row of moveRows){
+      if(result.moves.length>=4) break;
+      const rowWords = row.words;
+      if(!rowWords.length) continue;
+      const lastWord = rowWords[rowWords.length-1];
+      // Tolère un séparateur mal lu ("15115" pour "15/15") en plus du "/" normal.
+      const ppMatch = lastWord.text.match(/^(\d{1,3})\D?(\d{1,3})$/);
+      if(!ppMatch) continue; // ligne illisible : on l'ignore, sans arrêter la boucle
+      // Insère un espace entre minuscule->MAJUSCULE : Tesseract colle parfois
+      // 2 mots du nom d'une capacité sans espace (ex. "QuickAttack" au lieu
+      // de "Quick Attack", vérifié sur une vraie capture) ; les noms de
+      // capacités sont toujours en Title Case donc cette frontière est fiable.
+      const name = rowWords.slice(0,-1).map(w=>w.text).join(' ').trim().replace(/([a-z])([A-Z])/g, '$1 $2');
+      if(!name) continue;
+      result.moves.push({ name, pp:parseInt(ppMatch[1],10), ppMax:parseInt(ppMatch[2],10) });
+    }
+  }
+
+  // --- Les 6 lignes de stats : on cherche le MOT libellé n'importe où (pas
+  // forcément en tête de ligne — "DEF:" peut partager sa hauteur avec
+  // "Spirit Break" à gauche), puis on ne prend que les mots À SA HAUTEUR ET
+  // À SA DROITE (même logique que pour Ability/Nature/Moves ci-dessus). ---
+  const STAT_KEYS = ['hp','atk','def','spa','spd','spe'];
+  // Ordre d'affichage du jeu, de haut en bas (ATK, DEF, SPD, SPATK, SPDEF, puis HP
+  // en dernier) : sert à retrouver une ligne dont le libellé est mal lu.
+  const STAT_ROW_ORDER = ['atk','def','spe','spa','spd','hp'];
+  const rowGeom = {};            // statKey -> { cy, xMin } des lignes déjà lues
+  const usedWords = new Set();
+
+  // Nombres colorés (blanc / orange / bleu) d'un ensemble de mots, de gauche à droite.
+  const runsOfWords = (rowWords) => {
+    const allRuns=[];
+    for(const ow of rowWords){
+      const digitsOnly=ow.text.replace(/[^0-9]/g,'');
+      if(!digitsOnly) continue;
+      const runs = splitStatDigitsByColor(ow, ow.rawText, imageData, width, height);
+      if(runs){
+        for(const r of runs){ if(/^[0-9]+$/.test(r.text)) allRuns.push(r); }
+      } else {
+        // Repli : pas de symboles fiables -> on classe le mot entier par sa
+        // couleur moyenne sur sa bbox.
+        const orange=bboxColorRatio(imageData,width,height,ow.x0,ow.y0,ow.x1,ow.y1,isOrangePixel);
+        const blue=bboxColorRatio(imageData,width,height,ow.x0,ow.y0,ow.x1,ow.y1,isBlueStatPixel);
+        let cls='white';
+        if(orange.ratio>=0.08 && orange.count>=8) cls='orange';
+        else if(blue.ratio>=0.08 && blue.count>=8) cls='blue';
+        allRuns.push({ cls, text:digitsOnly, x0:ow.x0, x1:ow.x1 });
+      }
+    }
+    allRuns.sort((a,b)=>a.x0-b.x0);
+    return allRuns;
+  };
+
+  // Enregistre une ligne de stats. Règle de l'IV Scanner d'abord : l'IV est un
+  // nombre ORANGE de 0 à 31 et l'EV un nombre BLEU qui le suit (indépendant de
+  // la position, donc robuste si l'OCR découpe le texte autrement) ; à défaut, les
+  // 2 dernières valeurs de la ligne (HP n'a pas de stat finale affichée).
+  const recordRow = (statKey, allRuns) => {
+    if(allRuns.length<2) return false;
+    let ivRun = allRuns[allRuns.length-2];
+    let evRun = allRuns[allRuns.length-1];
+    const oranges = allRuns.filter(r => r.cls==='orange' && r.text.length<=2 && parseInt(r.text,10)<=31);
+    const blues = allRuns.filter(r => r.cls==='blue' && r.text.length<=3 && parseInt(r.text,10)<=252);
+    if(oranges.length && blues.length){
+      const o = oranges[oranges.length-1];
+      const bl = blues.find(x => x.x0 > o.x0);
+      if(bl){ ivRun = o; evRun = bl; }
+    }
+    const ivIdx = allRuns.indexOf(ivRun);
+    if(ivIdx>=1){
+      let finalVal = parseInt(allRuns[ivIdx-1].text,10);
+      // Aucune stat finale n'atteint 1000 : un 4e chiffre est un parasite collé
+      // devant par l'OCR (ex. "1101" lu pour "101", vu sur une vraie capture :
+      // le bord arrondi du cadre devient un "1"). On garde les 3 derniers.
+      if(!isNaN(finalVal) && finalVal >= 1000) finalVal = finalVal % 1000;
+      if(!isNaN(finalVal)) result.finals[statKey] = finalVal;
+    }
+    const ivVal = parseInt(ivRun.text,10);
+    const evVal = parseInt(evRun.text,10);
+    if(isNaN(ivVal) || isNaN(evVal)) return false;
+    result.stats[statKey] = {
+      iv: Math.max(0, Math.min(31, ivVal)),
+      ev: Math.max(0, Math.min(252, evVal)),
+    };
+    result.statConfidence[statKey] = (ivRun.cls==='orange' && evRun.cls==='blue') ? 'ok' : 'low';
+    return true;
+  };
+
+  // 1) Par libellé : on cherche le MOT libellé n'importe où (pas forcément en tête
+  // de ligne — "DEF:" peut partager sa hauteur avec "Spirit Break" à gauche), puis
+  // on ne prend que les mots À SA HAUTEUR ET À SA DROITE.
+  for(const w of words){
+    const statKey = dmgCardLabelMatch(w.text.replace(/:$/,''));
+    if(!statKey || result.stats[statKey]) continue; // déjà trouvée, ou pas un libellé de stat
+    const labelCy = (w.y0+w.y1)/2;
+    const sameRowRight = words.filter(ow => ow!==w && ow.x0 > w.x0 && Math.abs(((ow.y0+ow.y1)/2) - labelCy) <= Math.max(10, (w.y1-w.y0)*0.6));
+    const allRuns = runsOfWords(sameRowRight);
+    if(!recordRow(statKey, allRuns)) continue; // pas trouvé proprement sur cette occurrence du libellé
+    sameRowRight.forEach(ow => { if(/\d/.test(ow.text)) usedWords.add(ow); });
+    rowGeom[statKey] = { cy:labelCy, xMin: Math.min(...sameRowRight.filter(ow=>/\d/.test(ow.text)).map(ow=>ow.x0)) };
+  }
+
+  // 2) Par position : une ligne dont le libellé n'a pas été reconnu (ex. "HP:" lu
+  // "HF:" ou absent) est retrouvée d'après les lignes déjà lues — les 6 lignes sont
+  // régulièrement espacées et toujours dans le même ordre. On n'accepte que la
+  // structure attendue exacte (HP : 2 nombres, les autres : 3) pour ne rien inventer.
+  {
+    const found = STAT_ROW_ORDER.map((k,i)=> rowGeom[k] ? { i, cy:rowGeom[k].cy, xMin:rowGeom[k].xMin } : null).filter(Boolean);
+    const missingKeys = STAT_ROW_ORDER.filter(k => !result.stats[k]);
+    if(found.length>=2 && missingKeys.length){
+      const median = arr => { const t=[...arr].sort((a,b)=>a-b); const m=Math.floor(t.length/2); return t.length%2 ? t[m] : (t[m-1]+t[m])/2; };
+      const pitches=[];
+      for(let x=0;x<found.length;x++) for(let y=x+1;y<found.length;y++) pitches.push((found[y].cy-found[x].cy)/(found[y].i-found[x].i));
+      const pitch = median(pitches);
+      if(pitch > 4){
+        const a0 = median(found.map(f => f.cy - pitch*f.i));
+        const xMin = Math.min(...found.map(f => f.xMin));
+        for(const k of missingKeys){
+          const y = a0 + pitch*STAT_ROW_ORDER.indexOf(k);
+          const tol = Math.max(8, pitch*0.45);
+          const rowWords = words.filter(ow => !usedWords.has(ow) && /\d/.test(ow.text) && Math.abs(((ow.y0+ow.y1)/2) - y) <= tol && ow.x0 >= xMin - 6);
+          const runs = runsOfWords(rowWords);
+          if(runs.length === (k==='hp' ? 2 : 3) && recordRow(k, runs)){
+            rowWords.forEach(ow => usedWords.add(ow));
+            result.statFromPosition = (result.statFromPosition||[]).concat(k);
+          }
+        }
+      }
+    }
+  }
+  STAT_KEYS.forEach(k=>{ if(!result.stats[k]) result.missing.push(k); });
+
+  return result;
+}
+
+function dmgSetCaptureStatus(msg, cls){
+  const el = document.getElementById('dmgAtkCaptureStatus');
+  if(!el) return;
+  el.textContent = msg || '';
+  el.className = 'status-line' + (cls ? ' '+cls : '');
+  const dbg = document.getElementById('dmgAtkCaptureDebug');
+  if(dbg) dbg.innerHTML = '';
+}
+
+// Affiche le texte brut lu par Tesseract (repliable) — utile pour diagnostiquer
+// pourquoi la détection automatique n'a rien trouvé d'exploitable : permet de
+// voir en un coup d'œil si l'OCR a bien lu le texte de la fiche ou s'il a lu
+// autre chose (mauvaise zone, image trop petite, etc.).
+function dmgShowRawOcrDebug(){
+  const dbg = document.getElementById('dmgAtkCaptureDebug');
+  if(!dbg) return;
+  const text = dmgAtkLastRawOcrText.trim();
+  dbg.innerHTML = `<details style="margin-top:6px;font-size:10.5px;color:var(--text-dim);">
+    <summary style="cursor:pointer;">Voir le texte lu par l'OCR (à me copier-coller si une valeur est fausse)</summary>
+    <pre style="white-space:pre-wrap;word-break:break-word;background:#071d2c;border:1px solid #2d6d8c;border-radius:7px;padding:7px;margin-top:5px;max-height:160px;overflow-y:auto;">${escapeHtml(text || '(aucun texte détecté)')}</pre>
+  </details>`;
+}
+
+// La fiche affiche juste "Raichu" même pour un Raichu d'Alola : on retrouve
+// la bonne forme en comparant ce que la fiche montre à chaque forme
+// régionale de l'espèce (talent d'abord, puis stats finales). Sans forme
+// régionale pour l'espèce, ou en cas d'égalité, on garde la forme de base.
+async function dmgPickFormForCard(parsed, speciesOverride){
+  const base = dmgNormalizeTypedName(speciesOverride || parsed.name).replace(/ /g,'-');
+  const baseData = await dmgFetchPokemonData(base);
+  const varieties = await dmgFetchSpeciesVarieties(base);
+  const regional = (varieties||[]).filter(v => !v.isDefault && dmgIsRegionalVariety(v.name) && !/-cap$/.test(v.name));
+  if(!regional.length) return { slug:base, data:baseData, form:null, ambiguous:null };
+
+  const defaultVariety = varieties.find(v=>v.isDefault);
+  const candidates = [{ slug: defaultVariety ? defaultVariety.name : base, data: baseData, isDefault:true }];
+  for(const v of regional){
+    const d = await dmgFetchPokemonData(v.name);
+    if(d) candidates.push({ slug:v.name, data:d, isDefault:false });
+  }
+  if(candidates.length<2 || !candidates[0].data) return { slug:base, data:baseData, form:null, ambiguous:null };
+
+  const norm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const wantAbility = norm(parsed.ability);
+  const natureName = parsed.nature ? DMG_NATURE_NAMES.find(n=>n.toLowerCase()===parsed.nature.toLowerCase()) : null;
+  const levelKnown = (parsed.level && !parsed.levelUncertain) ? parsed.level : null;
+  const hasFinals = !!(parsed.finals && Object.keys(parsed.finals).length >= 3 && parsed.stats);
+  const evidence = !!wantAbility || hasFinals;
+
+  const scored = candidates.map(c=>{
+    let score = 0;
+    if(wantAbility && c.data.abilities.some(a=>{
+      const n = norm(a.name);
+      return n===wantAbility || calculateSimilarity(n, wantAbility) >= 0.85;
+    })) score += 100;
+    // Stats finales : on cherche, pour CETTE forme, le niveau/la nature (connus
+    // sinon déduits) qui reproduisent le plus de stats affichées. Marche aussi
+    // sur un collage de stats seul, sans niveau ni nature lus.
+    if(hasFinals){
+      const inf = dmgInferLevelAndNature(c.data.stats, parsed, { level:levelKnown, nature:natureName });
+      if(inf) score += inf.matches;
+    }
+    return { ...c, score };
+  });
+
+  let best = scored[0]; // forme de base par défaut (en tête de liste)
+  for(const c of scored){ if(c.score > best.score) best = c; }
+  // Égalité parfaite (même talent, mêmes stats : ex. Ponyta / Ponyta de Galar,
+  // seuls les types diffèrent) : impossible de trancher, on le dit.
+  const tied = scored.filter(c => c.score === best.score);
+  const ambiguous = (evidence && tied.length > 1) ? tied.map(c=>c.slug) : null;
+  return { slug:best.slug, data:best.data, form: best.isDefault ? null : best.slug, ambiguous };
+}
+
+// Niveau et nature ne figurent pas sur un recadrage "attaques + stats" : on les
+// DÉDUIT. Chaque stat finale (le nombre blanc) vaut
+//   floor((floor((2*base + IV + EV/4) * niveau / 100) + 5) * nature)
+// et on connaît base (Pokémon), IV et EV (nombres orange/bleu) : on cherche le
+// couple niveau/nature qui reproduit le plus de stats finales. Testé sur 2 vrais
+// recadrages : une seule combinaison explique les 5 stats (5/5) à chaque fois.
+// Les natures neutres sont équivalentes entre elles (aucun effet sur les stats).
+function dmgInferLevelAndNature(baseStats, parsed, fixed){
+  fixed = fixed || {};
+  if(!baseStats || !parsed || !parsed.finals || !parsed.stats) return null;
+  const usable = ['atk','def','spa','spd','spe'].filter(k => parsed.finals[k]!=null && parsed.stats[k]);
+  if(usable.length < 3) return null;
+  const NEUTRAL = ['Docile','Serious','Bashful','Quirky'];
+  const natures = fixed.nature ? [fixed.nature] : DMG_NATURE_NAMES.filter(n => !NEUTRAL.includes(n));
+  const levels = fixed.level ? [fixed.level] : Array.from({length:100}, (_,i)=>i+1);
+  let best = null, ties = 0;
+  for(const level of levels){
+    for(const nature of natures){
+      let matches = 0, diff = 0;
+      const wrong = [], fixes = [];
+      for(const k of usable){
+        const iv = parsed.stats[k].iv, ev = parsed.stats[k].ev;
+        // Plusieurs lectures peuvent avoir lu des valeurs finales différentes : la
+        // stat concorde si l'une d'elles colle (la principale sert pour l'écart).
+        const fins = (parsed.finalAlts && parsed.finalAlts[k] && parsed.finalAlts[k].length) ? parsed.finalAlts[k] : [parsed.finals[k]];
+        const fin = parsed.finals[k];
+        const calc = v => dmgCalcStat({ base:baseStats[k], iv:v, ev, level, stat:k, nature });
+        const v0 = calc(iv);
+        if(fins.includes(v0)){ matches++; continue; }
+        // L'OCR confond le "8" orange des IV avec 5/3/6 : si UN seul remplacement
+        // d'un chiffre par "8" redonne exactement la stat finale, la stat compte
+        // comme concordante (avec réparation de l'IV à la clé).
+        const cands = dmgConfusableIvCandidates(iv).filter(c => fins.includes(calc(c)));
+        if(cands.length === 1 && fins.length === 1){ matches++; fixes.push({ stat:k, from:iv, to:cands[0] }); }
+        else { wrong.push(k); diff += Math.abs(v0 - fin); }
+      }
+      const better = !best || matches>best.matches ||
+        (matches===best.matches && fixes.length<best.fixes.length) ||
+        (matches===best.matches && fixes.length===best.fixes.length && diff<best.diff);
+      const same = best && matches===best.matches && fixes.length===best.fixes.length && diff===best.diff;
+      if(better){ best = { level, nature, matches, diff, wrong, fixes }; ties = 1; }
+      else if(same) ties++;
+    }
+  }
+  // "mismatched" : stats qui ne concordent toujours pas (même après réparation) ;
+  // "repairs" : IV corrigés pour la combinaison retenue.
+  return { level:best.level, nature:best.nature, matches:best.matches, total:usable.length,
+           ambiguous: ties>1, mismatched: best.wrong, repairs: best.fixes };
+}
+
+// Fusionne les lectures d'UNE même capture (deux agrandissements). Texte (nom,
+// talent, nature, niveau) : la première lecture qui l'a ; attaques : celle qui en
+// a lu le plus. Pour chaque stat on garde TOUTES les valeurs d'IV/EV proposées
+// ("alts") : la lecture principale, la 2e, et celle de l'IV Scanner ; le choix se
+// fait ensuite par vote puis par contrôle avec la stat finale affichée.
+function dmgCombineParses(passes){
+  const list = passes.map(p => p.parsed);
+  const out = JSON.parse(JSON.stringify(list[0]));
+  out.alts = {};
+  for(const f of ['name','level','nature','ability']){
+    if(out[f] == null){
+      for(const q of list){ if(q[f] != null){ out[f] = q[f]; if(f==='level') out.levelUncertain = q.levelUncertain; break; } }
+    }
+  }
+  out.moves = list.map(q => q.moves || []).sort((a,b) => b.length - a.length)[0] || [];
+  for(const k of DMG_STAT_KEYS){
+    const cands = [];
+    passes.forEach(p => {
+      const st = p.parsed.stats[k];
+      if(st) cands.push({ iv:st.iv, ev:st.ev, src:'ocr' });
+      const v = p.iv && p.iv.values ? p.iv.values[k] : null;
+      if(v != null){
+        const flagged = (p.iv.sources && p.iv.sources[k]==='fallback') || (p.iv.ambiguous && p.iv.ambiguous.includes(k));
+        cands.push({ iv:v, ev: st ? st.ev : null, src:'ivscan', flagged:!!flagged });
+      }
+    });
+    out.alts[k] = cands;
+    if(!out.stats[k]){
+      const first = cands.find(c => c.ev != null);
+      if(first) out.stats[k] = { iv:first.iv, ev:first.ev };
+    }
+    // Valeurs finales (nombres blancs) lues par chaque lecture : la plus fréquente
+    // est retenue, la liste complète sert à contrôler (finalAlts).
+    const finalsRead = list.map(q => q.finals[k]).filter(v => v != null);
+    if(finalsRead.length){
+      const counts = new Map();
+      finalsRead.forEach(v => counts.set(v, (counts.get(v)||0) + 1));
+      let best = finalsRead[0];
+      for(const [v,n] of counts) if(n > counts.get(best)) best = v;
+      out.finals[k] = best;
+      out.finalAlts = out.finalAlts || {};
+      out.finalAlts[k] = [...counts.keys()];
+    }
+  }
+  out.missing = DMG_STAT_KEYS.filter(k => !out.stats[k]);
+  return out;
+}
+
+// Choisit, parmi les valeurs proposées par les différentes lectures, la valeur de
+// chaque IV/EV : vote (la lecture principale l'emporte à égalité) ; et, si le
+// niveau et la nature sont connus, on ne retient que les IV qui redonnent bien la
+// stat finale affichée. Renvoie la liste des IV qui ont changé par rapport à la
+// lecture principale (pour le message).
+function dmgResolveStatCandidates(parsed, baseStats, level, nature){
+  const changes = [];
+  if(!parsed.alts) return changes;
+  for(const k of DMG_STAT_KEYS){
+    const alts = parsed.alts[k];
+    const cur = parsed.stats[k];
+    if(!alts || !alts.length || !cur) continue;
+    const evVotes = new Map(), ivVotes = new Map();
+    alts.forEach(c => {
+      if(c.src==='ocr' && c.ev != null) evVotes.set(c.ev, (evVotes.get(c.ev)||0) + 1);
+      ivVotes.set(c.iv, (ivVotes.get(c.iv)||0) + (c.flagged ? 0.5 : 1));
+    });
+    const pick = (votes, prefer, accept) => {
+      let best = null, bestVotes = -1;
+      for(const [v,n] of votes){
+        if(accept && !accept(v)) continue;
+        if(n > bestVotes || (n === bestVotes && v === prefer)){ best = v; bestVotes = n; }
+      }
+      return best;
+    };
+    const ev = pick(evVotes, cur.ev) ?? cur.ev;
+    let iv = pick(ivVotes, cur.iv);
+    if(level && nature && baseStats && parsed.finals && parsed.finals[k] != null && k !== 'hp'){
+      const fins = (parsed.finalAlts && parsed.finalAlts[k] && parsed.finalAlts[k].length) ? parsed.finalAlts[k] : [parsed.finals[k]];
+      // Couple (IV, valeur finale) cohérent entre eux : si les lectures divergent sur
+      // la valeur finale, on retient celle qui colle avec un IV proposé.
+      let found = null;
+      for(const f of fins){
+        const consistent = pick(ivVotes, cur.iv, v => dmgCalcStat({ base:baseStats[k], iv:v, ev, level, stat:k, nature }) === f);
+        if(consistent !== null){ found = { iv:consistent, fin:f }; break; }
+      }
+      if(found){ iv = found.iv; parsed.finals[k] = found.fin; parsed.finalAlts[k] = [found.fin]; }
+    }
+    if(iv === null) iv = cur.iv;
+    if(iv !== cur.iv) changes.push({ stat:k, from:cur.iv, to:iv });
+    parsed.stats[k] = { iv, ev };
+  }
+  return changes;
+}
+
+// Un IV mal lu et sans autre lecture pour le corriger : toute valeur qui ne
+// diffère de la lue que d'UN chiffre. Réservé à l'étape finale (niveau et nature
+// déjà établis, stat finale connue) et jamais appliqué si plusieurs valeurs
+// possibles redonnent la stat finale.
+// Vrai si l'EV `b` ne diffère de l'EV lu `a` que d'UN chiffre (écriture sur 3 chiffres).
+function dmgEvEditNeighbour(a, b){
+  if(a === b) return false;
+  const x = String(a).padStart(3,'0'), y = String(b).padStart(3,'0');
+  let d = 0;
+  for(let i=0;i<3;i++) if(x[i] !== y[i]) d++;
+  return d === 1;
+}
+
+function dmgIvEditCandidates(iv){
+  const str = String(iv).padStart(2,'0');
+  const out = new Set();
+  for(let i=0;i<str.length;i++){
+    for(let d=0; d<=9; d++){
+      if(String(d) === str[i]) continue;
+      const cand = parseInt(str.slice(0,i) + d + str.slice(i+1), 10);
+      if(cand >= 0 && cand <= 31 && cand !== iv) out.add(cand);
+    }
+  }
+  return [...out];
+}
+
+// Nom d'attaque lu par l'OCR -> attaque réelle, parmi celles que CE Pokémon
+// peut apprendre (quelques centaines au plus). Corrige "Surt" -> surf,
+// "lron Tail" -> iron-tail... Sans ça, la recherche PokeAPI échoue et l'attaque
+// disparaît du tableau de comparaison. On ne corrige que si un candidat est
+// nettement meilleur que le suivant : en cas de doute, on ne change rien.
+function dmgCorrectMoveName(ocrName, learnable){
+  if(!learnable || !learnable.length) return null;
+  const norm = String(ocrName||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  if(norm.length < 3) return null;
+  let best = null, bestScore = 0, second = 0;
+  for(const slug of learnable){
+    const cand = slug.replace(/-/g,'');
+    const score = cand===norm ? 1 : calculateSimilarity(norm, cand);
+    if(score > bestScore){ second = bestScore; bestScore = score; best = slug; }
+    else if(score > second){ second = score; }
+  }
+  if(bestScore === 1) return best;
+  return (bestScore >= 0.75 && bestScore > second) ? best : null;
+}
+
+// Les collages successifs se COMPLÈTENT : d'abord la partie "nom + talent +
+// attaques", puis les stats seules (ou l'inverse, ou un 2e collage de stats pour
+// corriger le 1er). Chaque lecture s'ajoute à ce qui a déjà été lu pour le même
+// Pokémon ; une nouvelle valeur remplace l'ancienne. On repart de zéro si un
+// AUTRE Pokémon est reconnu (nom tapé modifié, ou autre nom lu) ou avec le ✕.
+let dmgAtkAccum = null;
+const dmgIdentityKey = n => String(n||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const DMG_STAT_KEYS = ['hp','atk','def','spa','spd','spe'];
+
+function dmgMergeCaptureParse(parsed){
+  const typedInput = document.getElementById('dmgAtkNameInput');
+  const typed = typedInput ? typedInput.value.trim() : '';
+  let prev = dmgAtkAccum;
+  if(prev){
+    if(typed && typed !== dmgAttacker.name) prev = null;
+    else if(parsed.name && prev.name && dmgIdentityKey(parsed.name) !== dmgIdentityKey(prev.name)) prev = null;
+  }
+  const m = prev ? JSON.parse(JSON.stringify(prev))
+                 : { name:null, level:null, nature:null, ability:null, moves:[], stats:{}, finals:{}, statConfidence:{}, missing:[] };
+  if(parsed.name) m.name = parsed.name;
+  if(parsed.level != null){ m.level = parsed.level; m.levelUncertain = !!parsed.levelUncertain; }
+  if(parsed.nature) m.nature = parsed.nature;
+  if(parsed.ability) m.ability = parsed.ability;
+  if(parsed.moves && parsed.moves.length) m.moves = parsed.moves;
+  m.alts = m.alts || {};
+  for(const k of Object.keys(parsed.stats || {})){
+    m.alts[k] = (parsed.alts && parsed.alts[k]) || [{ iv:parsed.stats[k].iv, ev:parsed.stats[k].ev, src:'ocr' }];
+  }
+  m.finalAlts = m.finalAlts || {};
+  for(const k of Object.keys(parsed.finals || {})){
+    m.finalAlts[k] = (parsed.finalAlts && parsed.finalAlts[k]) || [parsed.finals[k]];
+  }
+  Object.assign(m.stats, parsed.stats || {});
+  Object.assign(m.finals, parsed.finals || {});
+  Object.assign(m.statConfidence, parsed.statConfidence || {});
+  m.missing = DMG_STAT_KEYS.filter(k => !m.stats[k]);
+  dmgAtkAccum = m;
+  return m;
+}
+
+// L'OCR confond systématiquement le "8" orange des IV avec un "5", "3" ou "6"
+// (vu à toutes les échelles d'agrandissement, ex. IV 28 lu 25 ou 23), alors que
+// la valeur FINALE (nombre blanc) est, elle, bien lue. Pour une stat dont l'IV lu
+// ne redonne PAS la valeur finale affichée, on teste de remplacer UN chiffre
+// confondable par "8" ; si exactement une valeur redonne la stat finale, on la
+// retient. Jamais touché si l'IV lu est cohérent, ni en cas de doute.
+function dmgConfusableIvCandidates(iv){
+  const str = String(iv).padStart(2,'0');
+  const out = new Set();
+  for(let i=0;i<str.length;i++){
+    if('35690'.includes(str[i])){
+      const cand = parseInt(str.slice(0,i)+'8'+str.slice(i+1), 10);
+      if(cand !== iv && cand >= 0 && cand <= 31) out.add(cand);
+    }
+  }
+  return [...out];
+}
+// Capture déjà lue mais pas encore appliquée faute de Pokémon connu (collée avant
+// d'avoir tapé le nom) : appliquée dès que le nom est chargé.
+let dmgAtkPendingParsed = null;
+
+
+async function applyDmgAttackerCardResult(parsed){
+  const fighter = dmgAttacker;
+  let data = null, pickedForm = null, loadNote = null, reusedPrevious = false;
+  let ambiguousForms = null, typedFormSwitch = null;
+  // Case Méga : la fiche affiche les stats de la forme NORMALE, c'est donc avec elle
+  // qu'on lit, déduit et vérifie ; la Méga-forme est appliquée à la toute fin.
+  const prevRoot = dmgSpeciesRoot(fighter.megaBase ? fighter.megaBase.slug : (fighter.slug || fighter.name));
+  let wantMega = !!fighter.mega, megaHint = '';
+
+  // Quel Pokémon ? Priorité au NOM TAPÉ s'il a été modifié depuis le dernier
+  // chargement (cas du recadrage "attaques + stats", sans nom) ; sinon le nom lu
+  // sur la fiche entière ; sinon le Pokémon déjà chargé.
+  const nameInput = document.getElementById('dmgAtkNameInput');
+  const typed = nameInput ? nameInput.value.trim() : '';
+  if(typed && (typed !== fighter.name || !fighter.baseStats)){
+    const resolved = await dmgResolvePokemonSlug(typed);
+    const slug = resolved.slug || typed;
+    data = await dmgFetchPokemonData(slug);
+    if(data){
+      fighter.name = (resolved.form || resolved.note) ? slug : typed;
+      if(resolved.note) loadNote = { cls:'warn', text:resolved.note };
+      else if(resolved.form) loadNote = { cls:'ok', text:`Forme ${resolved.form==='mega' ? 'Méga' : DMG_REGION_LABELS[resolved.form]} chargée (${slug}).` };
+      // Nom tapé SANS forme ("raichu") : si le talent / les stats collés ne
+      // correspondent qu'à une forme régionale, c'est celle-là.
+      if(!resolved.form && !resolved.note){
+        const refined = await dmgPickFormForCard(parsed, slug);
+        ambiguousForms = refined.ambiguous;
+        if(refined.form && refined.data){
+          data = refined.data; pickedForm = refined.form; typedFormSwitch = typed;
+          fighter.name = refined.slug; loadNote = null;
+        }
+      }
+      // "mega gardevoir" tapé : on lit la fiche avec la forme normale, Méga appliquée ensuite.
+      if(resolved.form === 'mega'){
+        const b = await dmgBaseOfMega(data);
+        if(b){ megaHint = data.slug; data = b; wantMega = true; loadNote = null; }
+      }
+    } else {
+      fighter.name = typed; // on garde le texte tapé dans le champ
+      loadNote = { cls:'err', text:`« ${typed} » introuvable sur PokeAPI — vérifie l'orthographe (en anglais, ex. « raichu alolan »).` };
+    }
+  } else if(parsed.name){
+    const picked = await dmgPickFormForCard(parsed);
+    if(picked.data){
+      data = picked.data;
+      pickedForm = picked.form;
+      ambiguousForms = picked.ambiguous;
+      fighter.name = picked.form ? picked.slug : parsed.name;
+    }
+  } else if(fighter.baseStats){
+    // Déjà Méga-évolué : la lecture se fait avec la forme normale mémorisée.
+    data = (fighter.mega && fighter.megaBase)
+      ? fighter.megaBase.data
+      : { slug:fighter.slug, types:fighter.types, stats:fighter.baseStats, abilities:fighter.abilities, moves:fighter.learnableMoves || [] };
+    reusedPrevious = true;
+    // Pokémon déjà chargé sous sa forme de base : de nouvelles stats peuvent
+    // révéler une forme régionale (ex. stats collées après avoir tapé "raichu").
+    if(!dmgIsRegionalVariety(fighter.name) && !fighter.mega){
+      const refined = await dmgPickFormForCard(parsed, fighter.name);
+      ambiguousForms = refined.ambiguous;
+      if(refined.form && refined.data){
+        data = refined.data; pickedForm = refined.form; reusedPrevious = false;
+        typedFormSwitch = fighter.name; fighter.name = refined.slug;
+      }
+    }
+  }
+
+  // Espèce différente de celle déjà chargée : la case Méga ne suit pas (sauf si la Méga
+  // est demandée par la saisie elle-même).
+  if(data && wantMega && !megaHint && prevRoot && dmgSpeciesRoot(data.slug || fighter.name) !== prevRoot) wantMega = false;
+
+  const applyIvEv = () => ['hp','atk','def','spa','spd','spe'].forEach(k=>{
+    if(parsed.stats[k]){ fighter.ivs[k] = parsed.stats[k].iv; fighter.evs[k] = parsed.stats[k].ev; }
+  });
+
+  // Aucun Pokémon utilisable : on montre déjà les IV/EV lus et on garde la capture
+  // en attente, appliquée dès que le nom est chargé.
+  if(!data){
+    dmgAtkPendingParsed = parsed;
+    applyIvEv();
+    fighter.loadNote = loadNote;
+    renderDmgAttackerFields();
+    renderDmgResult();
+    const readCount = Object.keys(parsed.stats).length;
+    if(!readCount && !parsed.moves.length){
+      dmgSetCaptureStatus("Rien d'exploitable détecté sur la capture — recadre juste les attaques et les stats, ou colle la fiche entière.", 'err');
+      dmgShowRawOcrDebug();
+    } else if(loadNote && loadNote.cls==='err'){
+      dmgSetCaptureStatus(`Capture lue (${readCount}/6 stats, ${parsed.moves.length} attaque(s)) — mais ${loadNote.text}`, 'err');
+    } else {
+      dmgSetCaptureStatus(`Capture lue (${readCount}/6 stats, ${parsed.moves.length} attaque(s)). Tape maintenant le nom du Pokémon (ex. raichu alolan) puis clique sur Charger : elle sera appliquée.`, 'warn');
+    }
+    return;
+  }
+
+  dmgAtkPendingParsed = null;
+  fighter.types = data.types;
+  fighter.baseStats = data.stats;
+  fighter.abilities = data.abilities;
+  fighter.learnableMoves = data.moves || [];
+  if(data.slug) fighter.slug = data.slug;
+  fighter.loadNote = loadNote;
+
+  // Niveau / nature : lus sur la fiche, sinon déduits des stats finales. Le niveau
+  // lu sur la ligne du nom est PEU FIABLE ("Lv. 89" lu "©1239" sur une vraie
+  // capture) : s'il vient du repli "chiffres collés" on l'ignore, et quand les
+  // stats finales existent on VÉRIFIE niveau + nature lus ; si une autre
+  // combinaison les explique nettement mieux, on corrige.
+  dmgResolveStatCandidates(parsed, null, null, null); // vote entre les lectures, avant la déduction
+  const natureMatch = parsed.nature ? DMG_NATURE_NAMES.find(n=>n.toLowerCase()===parsed.nature.toLowerCase()) : null;
+  const levelRead = (parsed.level && !parsed.levelUncertain) ? parsed.level : null;
+  const haveFinals = !!(parsed.finals && Object.keys(parsed.finals).length >= 3);
+  let level = levelRead, nature = natureMatch || null;
+  let inference = null, levelNatureFix = null;
+  if(!level || !nature){
+    inference = dmgInferLevelAndNature(data.stats, parsed, { level, nature });
+    if(inference){ if(!level) level = inference.level; if(!nature) nature = inference.nature; }
+  } else {
+    const check = dmgInferLevelAndNature(data.stats, parsed, { level, nature });
+    if(check && check.matches < check.total){
+      const free = dmgInferLevelAndNature(data.stats, parsed, {});
+      if(free && free.matches >= 4 && free.matches > check.matches && (free.level !== level || free.nature !== nature)){
+        levelNatureFix = { fromLevel:level, fromNature:nature, toLevel:free.level, toNature:free.nature };
+        level = free.level; nature = free.nature;
+      }
+    }
+  }
+  if(level) fighter.level = level;
+  if(nature) fighter.nature = nature;
+
+  // Contrôle final avec la combinaison retenue : parmi les valeurs proposées par les
+  // différentes lectures, on garde celles qui redonnent la stat finale affichée ;
+  // puis réparation des IV encore incohérents (uniquement si au moins 3 stats
+  // concordent, et pas si le niveau est ambigu).
+  const trusted = () => !(inference && inference.ambiguous);
+  let voteChanges = [];
+  let finalCheck = null;
+  let repairs = [];
+  if(level && nature && haveFinals){
+    voteChanges = dmgResolveStatCandidates(parsed, data.stats, level, nature);
+    finalCheck = dmgInferLevelAndNature(data.stats, parsed, { level, nature });
+    // Niveau/nature solidement établis : au moins 4 stats sur 5 concordent. Avec moins,
+    // la combinaison déduite peut être fausse (trop de chiffres mal lus) et "corriger"
+    // un IV pour l'y faire coller dégraderait une lecture juste.
+    if(finalCheck && finalCheck.matches >= Math.min(finalCheck.total, 4) && trusted()){
+      // 1) "28" lu "25"... : un seul remplacement du chiffre confondable redonne la stat
+      repairs = finalCheck.repairs.slice();
+      repairs.forEach(r => { parsed.stats[r.stat].iv = r.to; });
+      // 2) La valeur finale (nombre blanc) est la valeur la mieux lue (EV bleu 100 %,
+      // finale 98 %, IV orange 94 % ou moins, mesuré) : pour une stat dont l'IV lu ne
+      // redonne PAS la finale affichée, on DÉDUIT l'IV de (finale, EV, niveau, nature).
+      // Si plusieurs IV donnent la même finale (stat "aplatie" à bas niveau ou par une
+      // nature qui la réduit), ils produisent exactement la même stat : le calcul de
+      // dégâts est identique quel que soit celui retenu, on prend le plus proche de la
+      // valeur lue (en privilégiant ceux proposés par une lecture, puis à un chiffre
+      // d'écart). Si AUCUN IV ne convient avec l'EV lu, c'est l'EV qui est suspect :
+      // on essaie les EV à un chiffre d'écart, seulement s'ils donnent un résultat unique.
+      if(finalCheck.mismatched.length){
+        const afterFirst = dmgInferLevelAndNature(data.stats, parsed, { level, nature });
+        for(const k of (afterFirst ? afterFirst.mismatched : [])){
+          // Valeur finale non corroborée (les lectures divergent) : on ne s'en sert pas
+          // pour corriger, la ligne reste signalée "à vérifier".
+          if(parsed.finalAlts && parsed.finalAlts[k] && parsed.finalAlts[k].length > 1) continue;
+          const sv = parsed.stats[k];
+          const ivSet = ev => { const out=[]; for(let v=0; v<=31; v++) if(dmgCalcStat({ base:data.stats[k], iv:v, ev, level, stat:k, nature }) === parsed.finals[k]) out.push(v); return out; };
+          const proposed = new Set(((parsed.alts && parsed.alts[k]) || []).map(c => c.iv));
+          const nearest = (set, read) => {
+            const edits = new Set(dmgIvEditCandidates(read));
+            return [...set].sort((x,y) =>
+              (proposed.has(y)-proposed.has(x)) || (edits.has(y)-edits.has(x)) || (Math.abs(x-read)-Math.abs(y-read)) || (x-y))[0];
+          };
+          let S = ivSet(sv.ev);
+          if(S.length){
+            const pick = S.length === 1 ? S[0] : nearest(S, sv.iv);
+            if(pick !== sv.iv){ repairs.push({ stat:k, from:sv.iv, to:pick, plateau: S.length > 1 }); sv.iv = pick; }
+          } else {
+            // aucun IV ne convient avec l'EV lu : EV suspect
+            const classes = new Map();
+            for(let e=0; e<=252; e++){
+              if(!dmgEvEditNeighbour(sv.ev, e)) continue;
+              const set = ivSet(e);
+              if(set.length) classes.set(Math.floor(e/4), { e, set });
+            }
+            // Plusieurs EV possibles : on retient celui avec lequel l'IV LU est cohérent
+            // (l'IV lu confirme alors l'EV), à condition qu'il soit unique.
+            let chosen = classes;
+            if(classes.size > 1){
+              const withReadIv = [...classes.entries()].filter(([, v]) => v.set.includes(sv.iv));
+              if(withReadIv.length === 1) chosen = new Map(withReadIv);
+            }
+            if(chosen.size === 1){
+              const { e, set } = [...chosen.values()][0];
+              const pickIv = set.includes(sv.iv) ? sv.iv : nearest(set, sv.iv);
+              repairs.push({ stat:k, from:sv.iv, to:pickIv, evFrom:sv.ev, evTo:e });
+              sv.ev = e; sv.iv = pickIv;
+            }
+          }
+        }
+      }
+      finalCheck = dmgInferLevelAndNature(data.stats, parsed, { level, nature });
+    }
+  }
+
+  // Talent : lu sur la fiche entière ; sinon le premier du Pokémon (modifiable).
+  if(parsed.ability) fighter.ability = parsed.ability;
+  else if(!reusedPrevious) fighter.ability = data.abilities.length ? formatAbilityDisplayName(data.abilities[0].name) : '';
+
+  applyIvEv();
+
+  // Les capacités détectées remplacent le tableau de comparaison multi-
+  // attaques (vidé d'abord, pour ne pas s'accumuler à chaque nouvelle
+  // capture) et sont chargées depuis PokeAPI comme pour un ajout manuel.
+  const unknownMoves = [];
+  if(parsed.moves.length){
+    dmgCompareMoves = [];
+    for(const mv of parsed.moves){
+      const corrected = dmgCorrectMoveName(mv.name, data.moves);
+      const slug = corrected || mv.name.toLowerCase().trim().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+      const md = await fetchMoveData(slug);
+      if(!md){ unknownMoves.push(mv.name); continue; }
+      if(md.category!=='Status' && md.power){
+        dmgCompareMoves.push({ name:md.name, power:md.power, type:md.type, category:md.category });
+      }
+    }
+    if(dmgCompareMoves.length){
+      dmgMove = { ...dmgCompareMoves[0] };
+    }
+  }
+
+  // Méga-forme appliquée EN DERNIER (la lecture ci-dessus a utilisé la forme normale).
+  let megaResult = null;
+  if(wantMega){
+    megaResult = await dmgApplyMegaToFighter(fighter, data, megaHint, reusedPrevious ? fighter.megaPrevAbility : fighter.ability);
+  } else {
+    fighter.mega = false; fighter.megaBase = null;
+  }
+
+  renderDmgAttackerFields();
+  renderDmgMoveFields();
+  renderDmgResult();
+
+  const infos = [], warnings = [];
+  const hasStats = Object.keys(parsed.stats).length > 0;
+  if(megaResult){
+    if(megaResult.ok) infos.push(`Méga-évolution appliquée : ${megaResult.label}${megaResult.multiple && !megaHint ? ' (l\'autre Méga est dans le menu Forme)' : ''}`);
+    else warnings.push(megaResult.note);
+  }
+
+  if(pickedForm) infos.push(`forme régionale détectée d'après le talent/les stats${typedFormSwitch ? ` (nom saisi : « ${typedFormSwitch} »)` : ''}`);
+  if(ambiguousForms && ambiguousForms.length > 1){
+    const REGION_WORD = { alola:'alolan', galar:'galarian', hisui:'hisuian', paldea:'paldean' };
+    const alt = ambiguousForms.find(sl => dmgIsRegionalVariety(sl));
+    const reg = alt && Object.keys(REGION_WORD).find(k => alt.includes('-'+k));
+    const hint = reg ? `${ambiguousForms[0].split('-')[0]} ${REGION_WORD[reg]}` : 'nom + forme';
+    warnings.push(`forme à confirmer : ${ambiguousForms.join(' / ')} ont le même talent et les mêmes stats — précise-la dans le nom (ex. « ${hint} »)`);
+  }
+  const fromStats = [];
+  if(inference){
+    if(!parsed.level) fromStats.push(`niveau ${fighter.level}`);
+    if(!natureMatch) fromStats.push(`nature ${fighter.nature}`);
+  }
+  if(fromStats.length) infos.push(`${fromStats.join(' et ')} déduit(s) des stats (${finalCheck ? finalCheck.matches+'/'+finalCheck.total : '?'} concordent)`);
+  if(levelRead && !haveFinals && !levelNatureFix) infos.push(`niveau ${levelRead} lu sur la fiche, non vérifié (contrôlé au collage des stats)`);
+  if(parsed.level && parsed.levelUncertain && !inference && !haveFinals) infos.push("niveau illisible sur la fiche : il sera déduit des stats");
+  if(levelNatureFix){
+    warnings.push(`niveau/nature lus (${levelNatureFix.fromLevel} ${levelNatureFix.fromNature}) corrigés en ${levelNatureFix.toLevel} ${levelNatureFix.toNature} car ils ne redonnaient pas les stats de la fiche`);
+  }
+  if(voteChanges && voteChanges.length){
+    infos.push(`IV départagé(s) entre les 2 lectures : ${voteChanges.map(r=>`${DMG_STAT_LABELS[r.stat]} ${r.from}→${r.to}`).join(', ')}`);
+  }
+  if(repairs.length){
+    const fmt = r => r.evTo != null ? `${DMG_STAT_LABELS[r.stat]} EV ${r.evFrom}→${r.evTo}${r.to!==r.from ? ` et IV ${r.from}→${r.to}` : ''}`
+                                   : `${DMG_STAT_LABELS[r.stat]} ${r.from}→${r.to}${r.plateau ? ' (±1, même stat finale donc même résultat)' : ''}`;
+    infos.push(`IV/EV déduit(s) d'après les stats finales, mieux lues que l'IV : ${repairs.map(fmt).join(', ')}`);
+  }
+  if(finalCheck){
+    const stillWrong = finalCheck.mismatched;
+    if(finalCheck.matches >= 3 && stillWrong.length){
+      warnings.push(`chiffre(s) probablement mal lu(s) sur : ${stillWrong.map(k=>DMG_STAT_LABELS[k]).join(', ')} (l'IV/EV lu ne redonne pas la stat finale affichée)`);
+    } else if(finalCheck.matches < 3 && finalCheck.total >= 4){
+      warnings.push(`les stats ne collent pas avec ${fighter.name} niveau ${fighter.level} (${finalCheck.matches}/${finalCheck.total}) — est-ce un autre Pokémon ? tape son nom`);
+    }
+  } else if(hasStats && (!level || !nature)){
+    warnings.push("niveau/nature non déterminés (valeurs finales illisibles)");
+  }
+  const missingCount = parsed.missing.length;
+  const lowConfCount = Object.values(parsed.statConfidence).filter(c=>c==='low').length;
+  if(hasStats && missingCount>0) warnings.push(`${missingCount} stat(s) non détectée(s)`);
+  if(lowConfCount>0) warnings.push(`${lowConfCount} valeur(s) à faible confiance`);
+  if(unknownMoves.length) warnings.push(`attaque(s) non reconnue(s) : ${unknownMoves.join(', ')}`);
+
+  // Collage en plusieurs fois : on dit ce qu'il manque encore.
+  const todo = [];
+  if(!hasStats) todo.push('les stats (colle le bloc des stats avec Ctrl+V)');
+  if(!parsed.moves.length) todo.push('les attaques (nom + talent + attaques)');
+  let head = `${hasStats && parsed.moves.length ? 'Analyse terminée' : 'Collage reçu'} — ${fighter.name} chargé`;
+  if(parsed.moves.length) head += ` avec ${dmgCompareMoves.length} attaque(s) offensive(s)`;
+  if(level && !fromStats.includes(`niveau ${fighter.level}`) && parsed.level) head += ` · niveau ${fighter.level}`;
+  const tail = todo.length ? ` — il manque encore : ${todo.join(' ; ')}` : '';
+  dmgSetCaptureStatus(head + (infos.length ? ' · ' + infos.join(' · ') : '') + tail + (warnings.length ? ' — à vérifier : ' + warnings.join(' ; ') : ''),
+    (warnings.length || todo.length) ? 'warn' : 'ok');
+}
+
+let dmgAtkLastRawOcrText = ''; // texte brut lu par Tesseract, pour diagnostiquer un echec de detection
+
+async function analyzeDmgAttackerCapture(){
+  if(!dmgAtkCaptureCanvas){ dmgSetCaptureStatus("Colle d'abord une capture (Ctrl+V)", 'err'); return; }
+  if(dmgAtkCaptureBusy) return;
+  dmgAtkCaptureBusy = true;
+  dmgSetCaptureStatus('OCR : analyse en cours...', '');
+  try{
+    const worker = await initIvOcr();
+    const passes = [], rawTexts = [];
+    for(const cv of [dmgAtkCaptureCanvas, dmgAtkCaptureCanvasAlt].filter(Boolean)){
+      const r = await worker.recognize(cv, {}, { blocks: true });
+      const data = r.data || {};
+      // La lecture des IV de l'IV Scanner (pairIvValues, éprouvée) vote aussi.
+      let iv = null;
+      try{ iv = pairIvValues(data, cv); }catch(e){ iv = null; }
+      passes.push({ parsed: parseDmgAttackerCard(data, cv), iv });
+      rawTexts.push(data.text || '');
+    }
+    dmgAtkLastRawOcrText = rawTexts.map((t,i)=> rawTexts.length>1 ? `— lecture ${i+1}/${rawTexts.length} —\n${t}` : t).join('\n\n');
+    await applyDmgAttackerCardResult(dmgMergeCaptureParse(dmgCombineParses(passes)));
+    dmgShowRawOcrDebug();
+  }catch(err){
+    console.error(err);
+    dmgSetCaptureStatus("Erreur OCR — vérifie ta connexion puis relance l'analyse.", 'err');
+  }finally{
+    dmgAtkCaptureBusy = false;
+  }
+}
+
+let dmgAtkCaptureCanvasAlt = null; // 2e lecture, à un autre agrandissement
+
+// Agrandissement par interpolation de Lanczos (a=3), fait ICI plutôt que par le
+// navigateur. Les agrandissements d'un navigateur (drawImage) varient selon la
+// version / la machine / la carte graphique, et la lecture des petits chiffres
+// orange en dépend fortement : mesuré sur 60 versions d'une même capture,
+// l'agrandissement "Lanczos" et "bicubique" donnent 12/12 captures parfaites,
+// alors que des filtres plus grossiers en cassent la moitié ou plus (ex. un
+// "09" lu "5"). Avec notre propre Lanczos, l'image envoyée à l'OCR est toujours
+// la même, partout. Fonction pure (tableaux d'octets RGBA), testable hors navigateur.
+function dmgLanczosResample(src, sw, sh, scale){
+  const dw = Math.max(1, Math.round(sw*scale)), dh = Math.max(1, Math.round(sh*scale));
+  const A = 3;
+  const lanczos = x => {
+    if(x === 0) return 1;
+    if(x <= -A || x >= A) return 0;
+    const px = Math.PI * x;
+    return A * Math.sin(px) * Math.sin(px/A) / (px*px);
+  };
+  // Poids d'un axe : pour chaque pixel d'arrivée, les pixels de départ concernés.
+  const axisWeights = (srcLen, dstLen) => {
+    const ratio = dstLen / srcLen;                 // > 1 : agrandissement
+    const out = new Array(dstLen);
+    for(let d=0; d<dstLen; d++){
+      const center = (d + 0.5) / ratio;            // position dans l'image d'origine
+      const first = Math.max(0, Math.floor(center - A + 0.5));
+      const last = Math.min(srcLen - 1, Math.ceil(center + A - 0.5));
+      const idx = [], w = [];
+      let sum = 0;
+      for(let i=first; i<=last; i++){
+        const wt = lanczos(i + 0.5 - center);
+        idx.push(i); w.push(wt); sum += wt;
+      }
+      for(let k=0;k<w.length;k++) w[k] /= (sum || 1);
+      out[d] = { idx, w };
+    }
+    return out;
+  };
+  const wx = axisWeights(sw, dw), wy = axisWeights(sh, dh);
+  // Passe horizontale (sh lignes x dw colonnes), puis verticale.
+  const tmp = new Float32Array(dw * sh * 3);
+  for(let y=0; y<sh; y++){
+    for(let x=0; x<dw; x++){
+      const { idx, w } = wx[x];
+      let r=0, g=0, b=0;
+      for(let k=0; k<idx.length; k++){
+        const o = (y*sw + idx[k]) * 4, wt = w[k];
+        r += src[o]*wt; g += src[o+1]*wt; b += src[o+2]*wt;
+      }
+      const t = (y*dw + x) * 3;
+      tmp[t] = r; tmp[t+1] = g; tmp[t+2] = b;
+    }
+  }
+  const out = new Uint8ClampedArray(dw * dh * 4);
+  for(let y=0; y<dh; y++){
+    const { idx, w } = wy[y];
+    for(let x=0; x<dw; x++){
+      let r=0, g=0, b=0;
+      for(let k=0; k<idx.length; k++){
+        const t = (idx[k]*dw + x) * 3, wt = w[k];
+        r += tmp[t]*wt; g += tmp[t+1]*wt; b += tmp[t+2]*wt;
+      }
+      const o = (y*dw + x) * 4;
+      out[o] = r; out[o+1] = g; out[o+2] = b; out[o+3] = 255;
+    }
+  }
+  return { data:out, width:dw, height:dh };
+}
+
+function dmgDrawScaled(img, scale){
+  const sw = img.naturalWidth, sh = img.naturalHeight;
+  const cw = Math.max(1, Math.round(sw*scale)), ch = Math.max(1, Math.round(sh*scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = cw; canvas.height = ch;
+  const ctx = canvas.getContext('2d', { willReadFrequently:true });
+  // Agrandissement : notre Lanczos (identique partout). Réduction d'une très grande
+  // capture : le navigateur suffit (on ne lit pas de petits chiffres dans ce cas).
+  if(scale > 1){
+    try{
+      const srcCanvas = document.createElement('canvas');
+      srcCanvas.width = sw; srcCanvas.height = sh;
+      const sctx = srcCanvas.getContext('2d', { willReadFrequently:true });
+      sctx.drawImage(img, 0, 0);
+      const srcData = sctx.getImageData(0, 0, sw, sh).data;
+      const res = dmgLanczosResample(srcData, sw, sh, scale);
+      canvas.width = res.width; canvas.height = res.height;
+      ctx.putImageData(new ImageData(res.data, res.width, res.height), 0, 0);
+      return canvas;
+    }catch(e){ /* repli ci-dessous */ }
+  }
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, cw, ch);
+  return canvas;
+}
+
+function loadDmgAttackerCaptureImage(img){
+  const w=img.naturalWidth, h=img.naturalHeight;
+  if(!w || !h){ dmgSetCaptureStatus('Image invalide ou vide', 'err'); return; }
+  let scale=1;
+  // Cette fiche a un texte bien plus petit que la zone de capture habituelle
+  // de l'IV Scanner : testé avec le vrai moteur Tesseract sur une vraie
+  // capture, un agrandissement ~x3 fait passer les stats de "3 erreurs sur
+  // 6 lignes" à "0 erreur", et rend enfin "Lv.100"/"Careful"/"Prankster"
+  // lisibles (à x1, c'est illisible). D'où un seuil et un plafond plus
+  // élevés qu'ailleurs dans l'app.
+  // ... mais PAS plus : mesuré sur 5 blocs de stats réels (30 stats), la lecture
+  // est meilleure entre x2,5 et x3,25 et se dégrade au-delà (x4 : 26/30 ;
+  // x6 et plus : 19/30, les "8" orange sont alors lus "5"). Un petit recadrage
+  // (ex. juste le bloc des stats, ~125 px de large) doit donc rester à ~x3,
+  // et non être agrandi jusqu'à atteindre 1300 px.
+  const maxDim=3500, minDim=1300, maxUpscale=3.25;
+  if(Math.max(w,h) > maxDim) scale = maxDim/Math.max(w,h);
+  else if(Math.max(w,h) < minDim) scale = Math.min(maxUpscale, minDim/Math.max(w,h));
+  dmgAtkCaptureCanvas = dmgDrawScaled(img, scale);
+  // 2e lecture à ~77 % de cet agrandissement : l'algorithme d'agrandissement du
+  // navigateur n'est pas celui qu'on peut tester ailleurs, et une même image
+  // agrandie un peu différemment se lit parfois différemment (un "09" lu "05",
+  // une ligne disparue...). Deux lectures indépendantes + vote + contrôle par
+  // les stats finales sont bien plus sûrs qu'une seule. Pas de 2e lecture pour
+  // une grande capture déjà nette (échelle ~1).
+  dmgAtkCaptureCanvasAlt = scale > 1.2 ? dmgDrawScaled(img, Math.max(1.5, scale*0.77)) : null;
+  const canvas = dmgAtkCaptureCanvas;
+
+  const dz=document.getElementById('dmgAtkDropzone');
+  const pv=document.getElementById('dmgAtkPreviewWrap');
+  if(dz) dz.style.display='none';
+  if(pv) pv.style.display='block';
+  const pvImg=document.getElementById('dmgAtkPreviewImg');
+  if(pvImg) pvImg.src=canvas.toDataURL('image/png');
+
+  analyzeDmgAttackerCapture();
+}
+
+function handleDmgAttackerPastedImage(file){
+  if(!file || !file.type || file.type.indexOf('image')!==0){
+    dmgSetCaptureStatus("Le presse-papiers ne contient pas d'image", 'err');
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    const img=new Image();
+    img.onload=()=>loadDmgAttackerCaptureImage(img);
+    img.onerror=()=>dmgSetCaptureStatus('Image illisible', 'err');
+    img.src=e.target.result;
+  };
+  reader.onerror=()=>dmgSetCaptureStatus('Erreur de lecture du fichier collé', 'err');
+  reader.readAsDataURL(file);
+}
+
+function clearDmgAttackerCapture(){
+  dmgAtkCaptureCanvas = null;
+  dmgAtkAccum = null;
+  dmgAtkPendingParsed = null;
+  const dz=document.getElementById('dmgAtkDropzone');
+  const pv=document.getElementById('dmgAtkPreviewWrap');
+  if(dz) dz.style.display='flex';
+  if(pv) pv.style.display='none';
+  dmgSetCaptureStatus('', '');
+}
+/* -------------- FIN CAPTURE FICHE POKÉMON ATTAQUANT -------------- */
+
+function renderDmgAttackerFields(){
+  const el = document.getElementById('dmgAttackerFields');
+  if(el) el.innerHTML = dmgFighterFieldsHtml(dmgAttacker, 'dmgAtk', false);
+  setupDmgFighterListeners(dmgAttacker, 'dmgAtk', false);
+}
+function renderDmgDefenderFields(){
+  const el = document.getElementById('dmgDefenderFields');
+  if(el) el.innerHTML = dmgFighterFieldsHtml(dmgDefender, 'dmgDef', true);
+  setupDmgFighterListeners(dmgDefender, 'dmgDef', true);
+}
+
+function setupDmgFighterListeners(fighter, prefix, isDefender){
+  const byId = id => document.getElementById(id);
+  dmgBindFormSelect(fighter, prefix);
+  const megaCb = byId(`${prefix}MegaCheck`);
+  if(megaCb) megaCb.addEventListener('change', () => dmgToggleMega(fighter, prefix, megaCb.checked));
+  dmgEnsureForms(fighter, prefix);
+
+  if(!isDefender){
+    const dz = byId('dmgAtkDropzone');
+    if(dz){
+      dz.addEventListener('click', ()=>dz.focus());
+      dz.addEventListener('dragover', (e)=>{ e.preventDefault(); dz.classList.add('drag'); });
+      dz.addEventListener('dragleave', ()=>dz.classList.remove('drag'));
+      dz.addEventListener('drop', (e)=>{
+        e.preventDefault();
+        dz.classList.remove('drag');
+        const file=e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if(file && file.type && file.type.indexOf('image')===0) handleDmgAttackerPastedImage(file);
+        else dmgSetCaptureStatus("Le fichier déposé n'est pas une image", 'err');
+      });
+    }
+    const reBtn = byId('dmgAtkReanalyzeBtn');
+    if(reBtn) reBtn.addEventListener('click', analyzeDmgAttackerCapture);
+    const clearCaptureBtn = byId('dmgAtkClearCaptureBtn');
+    if(clearCaptureBtn) clearCaptureBtn.addEventListener('click', clearDmgAttackerCapture);
+  }
+
+  const loadBtn = byId(`${prefix}LoadBtn`);
+  const nameInput = byId(`${prefix}NameInput`);
+  if(loadBtn && nameInput){
+    const doLoad = async ()=>{
+      const name = nameInput.value.trim();
+      if(!name) return;
+      loadBtn.textContent = '…';
+      loadBtn.disabled = true;
+      if(prefix === 'dmgAtk' && dmgAtkPendingParsed){
+        // Capture collée avant d'avoir tapé le nom : on l'applique maintenant.
+        await applyDmgAttackerCardResult(dmgAtkPendingParsed);
+      } else {
+        await dmgLoadFighterFromName(fighter, name);
+      }
+      loadBtn.disabled = false;
+      loadBtn.textContent = 'Charger';
+      if(prefix === 'dmgAtk') renderDmgAttackerFields(); else renderDmgDefenderFields();
+      renderDmgResult();
+    };
+    loadBtn.addEventListener('click', doLoad);
+    nameInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doLoad(); });
+  }
+
+  const mySelect = byId(`${prefix}MySelect`);
+  if(mySelect){
+    mySelect.addEventListener('change', ()=>{
+      if(!mySelect.value) return;
+      const p = dmgMyPokemonList().find(x=>x.name===mySelect.value);
+      if(!p) return;
+      dmgLoadFighterFromOwnedPokemon(fighter, p);
+      if(prefix === 'dmgAtk') renderDmgAttackerFields(); else renderDmgDefenderFields();
+      renderDmgResult();
+    });
+  }
+
+  const levelInput = byId(`${prefix}Level`);
+  if(levelInput) levelInput.addEventListener('input', ()=>{
+    fighter.level = Math.max(1, Math.min(100, Number(levelInput.value) || 1));
+    renderDmgResult();
+  });
+
+  const natureSelect = byId(`${prefix}Nature`);
+  if(natureSelect) natureSelect.addEventListener('change', ()=>{
+    fighter.nature = natureSelect.value;
+    const statsLine = byId(`${prefix}StatsLine`);
+    if(statsLine && fighter.baseStats){
+      const computed = dmgComputedStats(fighter);
+      statsLine.textContent = 'Stats finales : ' + ['hp','atk','def','spa','spd','spe'].map(s=>`${DMG_STAT_LABELS[s]} ${computed[s]}`).join(' · ');
+    }
+    renderDmgResult();
+  });
+
+  const abilitySelect = byId(`${prefix}Ability`);
+  if(abilitySelect) abilitySelect.addEventListener('change', ()=>{
+    fighter.ability = abilitySelect.value;
+    dmgRefreshStatsLine(fighter, prefix);
+    renderDmgResult();
+  });
+
+  const itemSelect = byId(`${prefix}Item`);
+  if(itemSelect) itemSelect.addEventListener('change', ()=>{
+    fighter.item = itemSelect.value;
+    fighter.canEvolveKey = '';          // Eviolite : on revérifie si le Pokémon peut évoluer
+    dmgRefreshStatsLine(fighter, prefix);
+    renderDmgResult();
+  });
+  const statusSelect = byId(`${prefix}Status`);
+  if(statusSelect) statusSelect.addEventListener('change', ()=>{
+    fighter.status = statusSelect.value;
+    renderDmgResult();
+  });
+
+  ['hp','atk','def','spa','spd','spe'].forEach(stat=>{
+    const ivInput = byId(`${prefix}Iv_${stat}`);
+    if(ivInput) ivInput.addEventListener('input', ()=>{
+      fighter.ivs[stat] = Math.max(0, Math.min(31, Number(ivInput.value) || 0));
+      dmgRefreshStatsLine(fighter, prefix);
+      renderDmgResult();
+    });
+    const evInput = byId(`${prefix}Ev_${stat}`);
+    if(evInput) evInput.addEventListener('input', ()=>{
+      fighter.evs[stat] = Math.max(0, Math.min(252, Number(evInput.value) || 0));
+      dmgRefreshStatsLine(fighter, prefix);
+      renderDmgResult();
+    });
+  });
+
+  ['atk','def','spa','spd'].forEach(stat=>{
+    const stageInput = byId(`${prefix}Stage_${stat}`);
+    if(stageInput) stageInput.addEventListener('input', ()=>{
+      fighter.stages[stat] = Math.max(-6, Math.min(6, Number(stageInput.value) || 0));
+      renderDmgResult();
+    });
+  });
+}
+
+// Met à jour juste la ligne "Stats finales" sans re-render tout le bloc
+// (évite de perdre le focus pendant la saisie des IV/EV).
+// Stats modifiées par l'objet tenu (indépendamment du rôle) : "Choice Band : Atq 267".
+// Les "Stats finales" affichées restent celles de la fiche ; l'objet est ajouté à côté.
+function dmgItemStatsHint(fighter, computed){
+  const item = fighter.item;
+  if(!item) return '';
+  const slug = String(fighter.slug || dmgNormalizeTypedName(fighter.name).replace(/ /g,'-')).toLowerCase(), root = dmgSpeciesRoot(slug);
+  const m = {};   // statKey -> multiplicateur (sur 4096)
+  switch(item){
+    case 'Choice Band': m.atk = 6144; break;
+    case 'Choice Specs': m.spa = 6144; break;
+    case 'Choice Scarf': m.spe = 6144; break;
+    case 'Assault Vest': m.spd = 6144; break;
+    case 'Eviolite': if(fighter.canEvolve !== false){ m.def = 6144; m.spd = 6144; } break;
+    case 'Light Ball': if(slug.includes('pikachu')){ m.atk = 8192; m.spa = 8192; } break;
+    case 'Thick Club': if(root==='cubone' || root==='marowak') m.atk = 8192; break;
+    case 'Deep Sea Tooth': if(root==='clamperl') m.spa = 8192; break;
+    case 'Deep Sea Scale': if(root==='clamperl') m.spd = 8192; break;
+    case 'Metal Powder': if(root==='ditto') m.def = 8192; break;
+  }
+  const parts = Object.keys(m).map(k => `${DMG_STAT_LABELS[k]} ${dmgPokeRound(computed[k] * m[k] / 4096)}`);
+  return parts.length ? ` — avec ${item} : ${parts.join(', ')}` : '';
+}
+// Talents qui changent une stat en permanence (indépendamment de l'attaque utilisée).
+function dmgAbilityStatsHint(fighter, computed){
+  const ab = dmgAbilityKey(fighter.ability);
+  const m = {};
+  if(ab === 'hugepower' || ab === 'purepower') m.atk = 8192;
+  else if(ab === 'hustle' || ab === 'gorillatactics') m.atk = 6144;
+  else if(ab === 'furcoat') m.def = 8192;
+  const parts = Object.keys(m).map(k => `${DMG_STAT_LABELS[k]} ${dmgPokeRound(computed[k] * m[k] / 4096)}`);
+  return parts.length ? ` — avec ${fighter.ability} : ${parts.join(', ')}` : '';
+}
+function dmgStatsLineText(fighter){
+  const computed = dmgComputedStats(fighter);
+  return 'Stats finales : ' + ['hp','atk','def','spa','spd','spe'].map(s=>`${DMG_STAT_LABELS[s]} ${computed[s]}`).join(' · ') + dmgAbilityStatsHint(fighter, computed) + dmgItemStatsHint(fighter, computed);
+}
+function dmgRefreshStatsLine(fighter, prefix){
+  const statsLine = document.getElementById(`${prefix}StatsLine`);
+  if(!statsLine || !fighter.baseStats) return;
+  statsLine.textContent = dmgStatsLineText(fighter);
+}
+
+function renderDmgMoveFields(){
+  const el = document.getElementById('dmgMoveFields');
+  if(!el) return;
+  // Suggestions : les attaques que l'attaquant peut apprendre (utile pour deviner
+  // le prochain coup d'un adversaire dont on ne connaît pas les attaques).
+  const learnable = Array.isArray(dmgAttacker.learnableMoves) ? dmgAttacker.learnableMoves : [];
+  const suggestions = learnable.length
+    ? `<datalist id="dmgMoveSuggestions">${learnable.map(m=>`<option value="${escapeHtml(m)}"></option>`).join('')}</datalist>` : '';
+  const pendingNote = dmgMove.pending
+    ? `<div class="status-line warn" style="margin:0 0 8px;">Attaque de <b>${escapeHtml(dmgAttacker.name || 'ce Pokémon')}</b> à saisir : tape son nom en anglais${learnable.length ? ' (des suggestions de ses attaques apparaissent)' : ''}, ou renseigne puissance / type / catégorie.</div>` : '';
+  el.innerHTML = `
+    ${pendingNote}
+    <div class="dmg-loadrow">
+      <input type="text" id="dmgMoveNameInput" ${learnable.length ? 'list="dmgMoveSuggestions"' : ''} placeholder="Ex: Séisme, Draco-Choc..." value="${escapeHtml(dmgMove.name)}">
+      <button class="act" id="dmgMoveLoadBtn" style="font-size:11px;padding:6px 9px;">Charger</button>
+    </div>
+    ${suggestions}
+    <div class="dmg-mini-note">La recherche interroge PokeAPI en anglais (ex: "earthquake", "draco-meteor") — tu peux aussi tout renseigner à la main ci-dessous.</div>
+    <div class="dmg-field-grid cols-3">
+      <div class="dmg-field"><label>Puissance</label><input type="number" min="0" max="250" id="dmgMovePower" value="${dmgMove.power}"></div>
+      <div class="dmg-field"><label>Type</label>
+        <select id="dmgMoveType">${DMG_TYPES_LIST.map(t=>`<option value="${t}" ${dmgMove.type===t?'selected':''}>${t}</option>`).join('')}</select>
+      </div>
+      <div class="dmg-field"><label>Catégorie</label>
+        <select id="dmgMoveCategory">
+          <option value="Physical" ${dmgMove.category==='Physical'?'selected':''}>Physique</option>
+          <option value="Special" ${dmgMove.category==='Special'?'selected':''}>Spéciale</option>
+          <option value="Status" ${dmgMove.category==='Status'?'selected':''}>Statut</option>
+        </select>
+      </div>
+    </div>
+    <div class="dmg-field-grid cols-3" style="margin-top:4px;">
+      <div class="dmg-field"><label>Coup critique</label>
+        <select id="dmgIsCritical">
+          <option value="0" ${!dmgOptions.isCritical?'selected':''}>Non</option>
+          <option value="1" ${dmgOptions.isCritical?'selected':''}>Oui</option>
+        </select>
+      </div>
+      <div class="dmg-field span-2"><label>Météo</label>
+        <select id="dmgWeather">
+          <option value="none" ${dmgOptions.weather==='none'?'selected':''}>Aucune</option>
+          <option value="sun" ${dmgOptions.weather==='sun'?'selected':''}>Soleil</option>
+          <option value="rain" ${dmgOptions.weather==='rain'?'selected':''}>Pluie</option>
+        </select>
+      </div>
+    </div>
+  `;
+  setupDmgMoveListeners();
+}
+
+function setupDmgMoveListeners(){
+  const byId = id => document.getElementById(id);
+
+  const loadBtn = byId('dmgMoveLoadBtn');
+  const nameInput = byId('dmgMoveNameInput');
+  if(loadBtn && nameInput){
+    const doLoad = async ()=>{
+      const name = nameInput.value.trim();
+      if(!name) return;
+      loadBtn.textContent = '…';
+      loadBtn.disabled = true;
+      const data = await fetchMoveData(name);
+      loadBtn.disabled = false;
+      loadBtn.textContent = 'Charger';
+      if(data){
+        dmgMove = { name: data.name, power: data.power, type: data.type, category: data.category };
+      }
+      renderDmgMoveFields();
+      renderDmgResult();
+    };
+    loadBtn.addEventListener('click', doLoad);
+    nameInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doLoad(); });
+  }
+
+  const powerInput = byId('dmgMovePower');
+  if(powerInput) powerInput.addEventListener('input', ()=>{
+    dmgMove.power = Math.max(0, Number(powerInput.value) || 0);
+    dmgMove.pending = false;
+    renderDmgResult();
+  });
+  const typeSelect = byId('dmgMoveType');
+  if(typeSelect) typeSelect.addEventListener('change', ()=>{
+    dmgMove.type = typeSelect.value;
+    dmgMove.pending = false;
+    renderDmgResult();
+  });
+  const categorySelect = byId('dmgMoveCategory');
+  if(categorySelect) categorySelect.addEventListener('change', ()=>{
+    dmgMove.category = categorySelect.value;
+    dmgMove.pending = false;
+    renderDmgResult();
+  });
+  const critSelect = byId('dmgIsCritical');
+  if(critSelect) critSelect.addEventListener('change', ()=>{
+    dmgOptions.isCritical = critSelect.value === '1';
+    renderDmgResult();
+  });
+  const weatherSelect = byId('dmgWeather');
+  if(weatherSelect) weatherSelect.addEventListener('change', ()=>{
+    dmgOptions.weather = weatherSelect.value === 'none' ? null : weatherSelect.value;
+    renderDmgResult();
+  });
+}
+
+
+// Combattant passé au moteur de calcul : stats finales + tout ce qui peut changer le
+// calcul (stages, talent, statut, objet tenu, espèce pour les objets réservés).
+function dmgCombatant(fighter, stats){
+  return {
+    level: fighter.level, types: fighter.types, stats, stages: fighter.stages,
+    ability: fighter.ability, status: fighter.status, item: fighter.item || '',
+    slug: fighter.slug || dmgNormalizeTypedName(fighter.name).replace(/ /g,'-'),
+    canEvolve: fighter.canEvolve,
+  };
+}
+
+function renderDmgResult(){
+  const el = document.getElementById('dmgResultWrap');
+  if(!el) return;
+
+  if(!dmgAttacker.baseStats || !dmgDefender.baseStats){
+    el.innerHTML = `<div class="iv-empty">Charge un Pokémon attaquant et un Pokémon défenseur pour voir le résultat.</div>`;
+    renderDmgCompareTable();
+    return;
+  }
+  if(dmgMove.pending){
+    el.innerHTML = `<div class="iv-empty">Saisis l'attaque de ${escapeHtml(dmgAttacker.name || 'l\'attaquant')} pour voir les dégâts sur ${escapeHtml(dmgDefender.name || 'le défenseur')}.</div>`;
+    renderDmgCompareTable();
+    return;
+  }
+  if(dmgMove.category === 'Status' || !dmgMove.power){
+    el.innerHTML = `<div class="iv-empty">Cette capacité n'inflige pas de dégâts directs (catégorie Statut ou puissance à 0).</div>`;
+    renderDmgCompareTable();
+    return;
+  }
+
+  const attStats = dmgComputedStats(dmgAttacker);
+  const defStats = dmgComputedStats(dmgDefender);
+
+  dmgEnsureCanEvolve(dmgAttacker); dmgEnsureCanEvolve(dmgDefender);
+  const result = calculateMoveDamage(
+    dmgCombatant(dmgAttacker, attStats), dmgCombatant(dmgDefender, defStats),
+    { power: dmgMove.power, type: dmgMove.type, category: dmgMove.category, name: dmgMove.name },
+    { isCritical: dmgOptions.isCritical, weather: dmgOptions.weather }
+  );
+
+  const effLabel = result.effectiveness === 0 ? 'Immunisé ×0'
+    : result.effectiveness < 1 ? `Pas très efficace ×${result.effectiveness}`
+    : result.effectiveness > 1 ? `Super efficace ×${result.effectiveness}`
+    : 'Efficacité normale ×1';
+  const ko = dmgKoLabel(result, defStats.hp);
+
+  el.innerHTML = `
+    <div class="dmg-result-main">${result.minPercent.toFixed(1)}% – ${result.maxPercent.toFixed(1)}%</div>
+    <div class="dmg-result-sub">Dégâts : ${result.min} – ${result.max} PV (sur ${defStats.hp} PV adverses)</div>
+    <div class="dmg-result-row"><span>Efficacité</span><span>${effLabel}</span></div>
+    <div class="dmg-result-row"><span>STAB</span><span>×${result.stab}</span></div>
+    <div class="dmg-result-row"><span>Critique</span><span>${dmgOptions.isCritical ? 'Oui (×1.5)' : 'Non'}</span></div>
+    ${dmgAttacker.status==='brn' && dmgMove.category==='Physical' && dmgAttacker.ability!=='Guts' ? `<div class="dmg-result-row"><span>Brûlure</span><span>×0.5</span></div>` : ''}
+    ${result.moveType && result.moveType !== dmgMove.type ? `<div class="dmg-result-row"><span>Type de l'attaque</span><span>${escapeHtml(dmgMove.type)} → ${escapeHtml(result.moveType)}</span></div>` : ''}
+    ${(result.abilityNotes || []).map(n => `<div class="dmg-result-row"><span>Talent ${n.side==='attacker' ? 'attaquant' : 'défenseur'} · ${escapeHtml(n.ability)}</span><span style="${n.applied ? '' : 'opacity:.6;'}">${escapeHtml(n.text)}</span></div>`).join('')}
+    ${result.itemNotes.map(n => `<div class="dmg-result-row"><span>Objet ${n.side==='attacker' ? 'attaquant' : 'défenseur'} · ${escapeHtml(n.item)}</span><span style="${n.applied ? '' : 'opacity:.6;'}">${escapeHtml(n.text)}</span></div>`).join('')}
+    ${ko ? `<div class="dmg-ko ${ko.cls}">${ko.text}</div>` : ''}
+  `;
+
+  renderDmgCompareTable();
+}
+
+// ---- Comparaison multi-attaques (point 10 de la demande) ----
+// Liste d'attaques ajoutées par le joueur, comparées côte à côte contre le
+// couple attaquant/défenseur actuellement configuré. Recalculée à chaque
+// changement de stats/options via l'appel en fin de renderDmgResult().
+let dmgCompareMoves = []; // { name, power, type, category }
+let dmgCompareStatus = '';
+
+function renderDmgCompareTable(){
+  const el = document.getElementById('dmgCompareWrap');
+  if(!el) return;
+
+  if(!dmgAttacker.baseStats || !dmgDefender.baseStats){
+    el.innerHTML = `<div class="iv-empty">Charge un attaquant et un défenseur pour comparer plusieurs attaques.</div>`;
+    return;
+  }
+
+  const attStats = dmgComputedStats(dmgAttacker);
+  const defStats = dmgComputedStats(dmgDefender);
+
+  const rows = dmgCompareMoves.map((mv, idx)=>{
+    const result = calculateMoveDamage(
+      dmgCombatant(dmgAttacker, attStats), dmgCombatant(dmgDefender, defStats),
+      { power: mv.power, type: mv.type, category: mv.category, name: mv.name },
+      { isCritical: dmgOptions.isCritical, weather: dmgOptions.weather }
+    );
+    const effLabel = `×${result.effectiveness}`;
+    return `<div class="dmg-compare-row">
+      <span class="dmg-compare-name" title="${escapeHtml(mv.name)} (${mv.type}, ${mv.category==='Physical'?'phys.':'spé.'}, pui. ${mv.power})">${escapeHtml(mv.name)}</span>
+      <span>${result.min}–${result.max}</span>
+      <span>${result.minPercent.toFixed(1)}–${result.maxPercent.toFixed(1)}%</span>
+      <span>${effLabel}</span>
+      <button class="dmg-compare-del" data-idx="${idx}" title="Retirer">✕</button>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="dmg-loadrow">
+      <input type="text" id="dmgCompareNameInput" placeholder="Ex: Lance-Flammes, Draco-Choc...">
+      <button class="act" id="dmgCompareAddBtn" style="font-size:11px;padding:6px 9px;">+ Ajouter</button>
+    </div>
+    ${dmgCompareStatus ? `<div class="status-line">${escapeHtml(dmgCompareStatus)}</div>` : ''}
+    ${dmgCompareMoves.length ? `
+      <div class="dmg-compare-header"><span>Attaque</span><span>Dégâts</span><span>% PV</span><span>Eff.</span><span></span></div>
+      ${rows}
+    ` : `<div class="iv-empty">Ajoute des attaques pour les comparer côte à côte et repérer la plus efficace.</div>`}
+  `;
+  setupDmgCompareListeners();
+}
+
+function setupDmgCompareListeners(){
+  const byId = id => document.getElementById(id);
+
+  const addBtn = byId('dmgCompareAddBtn');
+  const nameInput = byId('dmgCompareNameInput');
+  if(addBtn && nameInput){
+    const doAdd = async ()=>{
+      const name = nameInput.value.trim();
+      if(!name) return;
+      addBtn.disabled = true;
+      addBtn.textContent = '…';
+      const data = await fetchMoveData(name);
+      addBtn.disabled = false;
+      addBtn.textContent = '+ Ajouter';
+      if(data && data.category !== 'Status' && data.power){
+        dmgCompareMoves.push({ name: data.name, power: data.power, type: data.type, category: data.category });
+        dmgCompareStatus = '';
+      } else if(data){
+        dmgCompareStatus = `"${data.name}" est une capacité de statut (pas de dégâts directs) — non ajoutée.`;
+      } else {
+        dmgCompareStatus = `Capacité "${name}" introuvable sur PokeAPI (recherche en anglais).`;
+      }
+      renderDmgCompareTable();
+    };
+    addBtn.addEventListener('click', doAdd);
+    nameInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doAdd(); });
+  }
+
+  document.querySelectorAll('.dmg-compare-del').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      dmgCompareMoves.splice(Number(btn.dataset.idx), 1);
+      renderDmgCompareTable();
+    });
+  });
+}
+
+// Inverse les rôles : le défenseur devient l'attaquant et inversement, avec TOUT ce
+// qui leur appartient, tel quel (niveau, nature, IV/EV, talent, objets/statut,
+// modifications de combat, types, stats de base). L'attaque, elle, appartient à
+// l'ancien attaquant : on la met de côté (avec son tableau de comparaison et la
+// mémoire des collages) et le nouvel attaquant repart sans attaque, à saisir. En
+// ré-inversant, tout est restitué à l'identique.
+function dmgSwapRoles(){
+  const oldAtk = dmgAttacker, oldDef = dmgDefender;
+  oldAtk.session = { move:dmgMove, compare:dmgCompareMoves, accum:dmgAtkAccum, pending:dmgAtkPendingParsed };
+  dmgAttacker = oldDef;
+  dmgDefender = oldAtk;
+  const saved = dmgAttacker.session;
+  dmgMove = saved ? saved.move : { name:'', power:60, type:'normal', category:'Physical', pending:true };
+  dmgCompareMoves = saved ? saved.compare : [];
+  dmgCompareStatus = '';
+  dmgAtkAccum = saved ? saved.accum : null;
+  dmgAtkPendingParsed = saved ? saved.pending : null;
+  dmgAtkCaptureCanvas = null;
+  dmgAtkCaptureCanvasAlt = null;
+  renderDmgAttackerFields();
+  renderDmgDefenderFields();
+  renderDmgMoveFields();
+  renderDmgResult();
+  const a = dmgAttacker.name || 'le nouvel attaquant', d = dmgDefender.name || 'le nouveau défenseur';
+  showToast(`Rôles inversés : ${a} attaque ${d}`, dmgSwapRoles);
+}
+
+async function initDamageCalculator(){
+  renderDmgAttackerFields();
+  renderDmgDefenderFields();
+  renderDmgMoveFields();
+  renderDmgResult();
+  renderDmgCompareTable();
+  const swapBtn = document.getElementById('dmgSwapBtn');
+  if(swapBtn && !swapBtn.dataset.bound){
+    swapBtn.dataset.bound = '1';
+    swapBtn.addEventListener('click', dmgSwapRoles);
+  }
+}
+/* ===================== FIN CALCULATEUR DE DÉGÂTS ===================== */
+
+// Appelé ici (après la déclaration de dmgAttacker/dmgDefender/dmgMove/
+// dmgOptions ci-dessus), et non juste après sa propre définition plus haut :
+// setupIvScanner() -> setupIvScannerCollapse() -> apply() peut appeler
+// initDamageCalculator() -> renderDmgAttackerFields() dès le tout premier
+// chargement de la page si l'onglet "Dégâts" était actif lors d'une
+// session précédente (préférence retrouvée dans localStorage). Si cet
+// appel arrivait avant la ligne "let dmgAttacker = ...", ça levait
+// "Cannot access 'dmgAttacker' before initialization" (zone morte
+// temporelle d'un "let") et plantait tout l'affichage du panneau de droite
+// dès l'ouverture — vérifié avec le message d'erreur exact d'un vrai cas.
+setupIvScanner();
+
+/* ===================== PAGES : HUNT TRACKER / BATTLE =====================
+   Le titre "HUNT TRACKER" de la barre de titre est un sélecteur de page. La
+   page Hunt Tracker est l'app habituelle ; la page Battle contient tout le
+   calculateur de dégâts (attaquant, défenseur, attaque, résultat,
+   comparaison). Les 2 pages sont dans le même fichier : changer de page ne
+   recharge rien et ne coupe ni le partage d'écran ni la détection auto.
+   On démarre toujours sur Hunt Tracker (l'app sert surtout à compter). */
+const APP_PAGE_LABELS = { hunt:'HUNT TRACKER', battle:'BATTLE' };
+let currentAppPage = 'hunt'; // 'hunt' | 'battle'
+let battlePageInitialized = false;
+
+function setAppPage(page){
+  if(page !== 'hunt' && page !== 'battle') page = 'hunt';
+  // Le mode compact est un petit widget flottant : la page Battle n'y tiendrait pas.
+  if(page === 'battle' && document.body.classList.contains('compact-mode')){
+    showToast("Quitte d'abord le mode réduit pour ouvrir la page Battle", null);
+    return;
+  }
+  const previous = currentAppPage;
+  currentAppPage = page;
+  document.body.classList.toggle('page-battle', page === 'battle');
+
+  const label = document.getElementById('pageMenuLabel');
+  if(label) label.textContent = APP_PAGE_LABELS[page];
+  document.querySelectorAll('#pageMenuPanel .page-menu-item').forEach(item=>{
+    item.classList.toggle('active', item.dataset.page === page);
+  });
+  const wrap = document.getElementById('pageMenuWrap');
+  if(wrap) wrap.classList.remove('open');
+
+  if(page === 'battle' && !battlePageInitialized){
+    battlePageInitialized = true;
+    initDamageCalculator();
+  }
+  if(page === 'hunt' && previous === 'battle'){
+    // La page Hunt Tracker était masquée (display:none) : si un rendu a eu lieu
+    // pendant ce temps (détection auto de rencontre...), la zone de sélection
+    // du partage d'écran a été dimensionnée à 0. On refait un rendu complet.
+    render();
+  }
+  window.scrollTo(0, 0);
+}
+
+function setupAppPageMenu(){
+  const wrap = document.getElementById('pageMenuWrap');
+  const btn = document.getElementById('pageMenuBtn');
+  if(!wrap || !btn) return;
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    closeAllDropdownsExcept(wrap.id);
+    wrap.classList.toggle('open');
+  });
+  document.querySelectorAll('#pageMenuPanel .page-menu-item').forEach(item=>{
+    item.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      setAppPage(item.dataset.page);
+    });
+  });
+  document.addEventListener('click', (e)=>{
+    if(wrap.classList.contains('open') && !wrap.contains(e.target)) wrap.classList.remove('open');
+  });
+}
+setupAppPageMenu();
+/* ===================== FIN PAGES ===================== */
 
 /* ===================== CONTRÔLES FENÊTRE (premier plan / transparence / réduire) ===================== */
 /* Ces 3 contrôles ne fonctionnent que dans l'app de bureau Electron (window.windowControls
@@ -5493,6 +8662,36 @@ function setupWindowControls(){
     savePrefs();
   });
 
+  // --- Listes déroulantes natives : pause du "toujours au premier plan" ---
+  // Tant que "toujours au premier plan" est actif, main.js ramène régulièrement la
+  // fenêtre au premier plan, ce qui vole l'activation à la popup d'un <select> (une
+  // fenêtre système séparée) et la FERME aussitôt sous Windows. La page Battle
+  // contient beaucoup de listes (nature, talent, catégorie, météo...) et un champ
+  // à suggestions (<input list>, même type de popup) : sans cette pause, elles se
+  // refermeraient à l'ouverture. Un navigateur ne signale pas l'ouverture d'une
+  // liste ; on approxime avec focus/blur délégués sur document (donc valables aussi
+  // pour les champs recréés par render()). Voir nativeSelectOpen dans main.js.
+  {
+    let selectOpenSent = false;
+    const isNativePopupField = el => !!el && (el.tagName === 'SELECT' || (el.tagName === 'INPUT' && el.hasAttribute('list')));
+    const sendSelectOpen = flag => {
+      if(selectOpenSent === flag) return;
+      selectOpenSent = flag;
+      try{
+        if(window.windowControls.setSelectOpen){
+          const r = window.windowControls.setSelectOpen(flag);
+          if(r && typeof r.catch === 'function') r.catch(()=>{});
+        }
+      }catch(e){}
+    };
+    document.addEventListener('focusin', e => { sendSelectOpen(isNativePopupField(e.target)); });
+    document.addEventListener('focusout', e => { if(isNativePopupField(e.target)) sendSelectOpen(false); });
+    // Garde-fou : si le champ disparaît sans signal de perte de focus (ex. re-rendu de
+    // la page), un clic ailleurs relance le "toujours au premier plan" au lieu de le
+    // laisser en pause indéfiniment.
+    document.addEventListener('pointerdown', e => { if(selectOpenSent && !isNativePopupField(e.target)) sendSelectOpen(false); }, true);
+  }
+
   // --- Transparence ---
   opacitySlider.value = prefs.opacity;
   window.windowControls.setOpacity(prefs.opacity / 100);
@@ -5510,6 +8709,7 @@ function setupWindowControls(){
   };
   compactBtn.addEventListener('click', async () => {
     const next = !document.body.classList.contains('compact-mode');
+    if(next && currentAppPage !== 'hunt') setAppPage('hunt');
     await window.windowControls.setCompact(next);
     prefs.compact = next;
     applyCompactUi(next);
@@ -7585,10 +10785,23 @@ function renderLangPanel(){
 // la langue choisie est l'anglais. Passer par le français intermédiaire
 // avant de retraduire est ce qui permet un retour FR fidèle après un
 // passage en EN, sans avoir à mémoriser le texte original ailleurs.
+// Prévient l'app de bureau Electron (si présente : window.windowControls n'existe pas
+// dans un navigateur) de la langue affichée, pour que les fenêtres qu'elle ouvre
+// elle-même (ex. "Choisir une source de capture") s'affichent dans cette langue.
+function notifyElectronLanguage(lang){
+  try{
+    if(typeof window.windowControls !== 'undefined' && window.windowControls.setLanguage){
+      const r = window.windowControls.setLanguage(lang);
+      if(r && typeof r.catch === 'function') r.catch(()=>{});
+    }
+  }catch(e){}
+}
+
 function setLanguage(lang){
   if (lang !== 'fr' && lang !== 'en') return;
   currentLang = lang;
   try { localStorage.setItem(LANG_KEY, lang); }catch(e){}
+  notifyElectronLanguage(lang);
 
   // 1) Refaire le rendu des zones dynamiques déjà affichées, toujours en
   // français à la source (le code de ces fonctions n'a pas changé).
@@ -7644,6 +10857,7 @@ function setupLangDropdown(){
   // fil de l'eau.
   if (currentLang === 'en') translateDOM(document.body);
   startI18nObserver();
+  notifyElectronLanguage(currentLang); // la langue mémorisée au démarrage
 }
 setupLangDropdown();
 /* ===================== FIN I18N ===================== */
