@@ -940,7 +940,7 @@
     box-shadow:0 8px 24px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.04);
   }
   .capture-panel .title{color:var(--poke-yellow)!important;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px;font-weight:800;}
-  .capture-stage-wrap{max-height:280px;overflow:auto;border-radius:10px;}
+  .capture-stage-wrap{max-height:min(560px,70vh);overflow:auto;border-radius:10px;}
   .capture-stage{position:relative;background:#000;border-radius:10px!important;overflow:hidden;max-width:100%;display:none;border:2px solid #2d718f!important;box-shadow:0 8px 24px rgba(0,0,0,.3);}
   .capture-stage.on{display:block;}
   .capture-stage video{display:block;width:100%;max-height:260px;object-fit:contain;background:#000;}
@@ -2513,9 +2513,16 @@ let autoDetectOn = false;
 let detectTimer = null;
 // Facteur d'agrandissement de l'aperçu de capture, pour pouvoir tracer un
 // encadré plus précis à la souris (bornes et pas définis dans CAPTURE_ZOOM_*).
-let captureZoom = 1;
+const CAPTURE_ZOOM_DEFAULT = 4;   // l'aperçu à 100% est trop petit pour tracer la zone : on démarre directement au zoom maximum (400%)
+let captureZoom = CAPTURE_ZOOM_DEFAULT;
+try{ const z = parseFloat(localStorage.getItem('ht-capture-zoom')); if(z >= 1 && z <= 4) captureZoom = z; }catch(e){}
+function setCaptureZoom(z){
+  captureZoom = z;
+  try{ localStorage.setItem('ht-capture-zoom', String(z)); }catch(e){}
+}
+let pendingCenterRegion = false;
 const CAPTURE_ZOOM_MIN = 1;
-const CAPTURE_ZOOM_MAX = 3;
+const CAPTURE_ZOOM_MAX = 4;
 const CAPTURE_ZOOM_STEP = 0.25;
 let region = null;
 let selecting = false;
@@ -3737,6 +3744,7 @@ async function render(){
           <button class="act" id="zoomOutBtn" style="font-size:11px;padding:4px 9px;" ${captureZoom<=CAPTURE_ZOOM_MIN ? 'disabled' : ''}>−</button>
           <span class="zoom-ctrl-value" id="zoomCtrlValue">${Math.round(captureZoom*100)}%</span>
           <button class="act" id="zoomInBtn" style="font-size:11px;padding:4px 9px;" ${captureZoom>=CAPTURE_ZOOM_MAX ? 'disabled' : ''}>+</button>
+          <button class="act" id="zoomAutoBtn" title="Agrandit l'aperçu pour que la zone surveillée remplisse la vue" style="font-size:11px;padding:4px 9px;">🔍 Zoom auto</button>
           ${captureZoom!==1 ? '<button class="act" id="zoomResetBtn" style="font-size:11px;padding:4px 9px;">100%</button>' : ''}
         </div>
       </div>
@@ -3865,7 +3873,9 @@ async function render(){
   setupEventListeners(h);
   updateTimerDisplays();
   __restoreScroll();
-  requestAnimationFrame(() => { __restoreScroll(); requestAnimationFrame(() => { main.style.minHeight = ''; __restoreScroll(); }); });
+  const __center = pendingCenterRegion; pendingCenterRegion = false;
+  requestAnimationFrame(() => { __restoreScroll(); if(__center) centerCaptureOnRegion(); requestAnimationFrame(() => { main.style.minHeight = ''; if(__center) centerCaptureOnRegion(); else __restoreScroll(); }); });
+  if(__center){ const v = document.getElementById('captureVideo'); if(v) v.addEventListener('loadedmetadata', () => { sizeOverlay(); centerCaptureOnRegion(); }, { once:true }); }
 }
 
 async function startCapture(){
@@ -3879,8 +3889,18 @@ async function startCapture(){
     });
     captureTrack = mediaStream.getVideoTracks()[0] || null;
     if(captureTrack) captureTrack.addEventListener('ended', stopCapture);
+    // On reprend la dernière zone tracée (même fenêtre de jeu) : aperçu zoomé dessus tout de suite.
     region = null;
+    try{
+      const r = JSON.parse(localStorage.getItem('ht-capture-region') || 'null');
+      if(r && [r.x,r.y,r.w,r.h].every(v => typeof v === 'number' && v >= 0 && v <= 1) && r.w > 0.02 && r.h > 0.02 && r.x + r.w <= 1.001 && r.y + r.h <= 1.001) region = r;
+    }catch(e){}
+    pendingCenterRegion = true;
     await render();
+    if(region){
+      const fit = computeAutoZoom(false);
+      if(fit !== captureZoom){ setCaptureZoom(fit); pendingCenterRegion = true; await render(); }
+    }
     startCapturePump();
   }catch(err){
     const message = err?.message === 'getDisplayMedia indisponible'
@@ -3962,6 +3982,43 @@ function getVideoRect(video, overlay){
 // DOM à chaud (getElementById) au lieu de fermer sur des références figées,
 // et les listeners globaux ne sont posés qu'une seule fois pour toute la vie
 // de la page.
+// Zoom qui fait remplir la vue par la zone surveillée (ou 200 % tant qu'aucune zone n'est tracée).
+// onlyIn = true : on n'agrandit que (jamais de dézoom surprise juste après avoir tracé la zone).
+function computeAutoZoom(onlyIn){
+  let z = CAPTURE_ZOOM_DEFAULT;
+  const wrap = document.getElementById('captureStageWrap');
+  const ov = document.getElementById('overlayCanvas');
+  const vid = document.getElementById('captureVideo');
+  if(region && wrap && ov && vid && ov.width && ov.height){
+    const vr = getVideoRect(vid, ov);
+    const w1 = vr.width / captureZoom, h1 = vr.height / captureZoom;    // taille de la vidéo à 100 %
+    if(w1 > 0 && h1 > 0 && region.w > 0 && region.h > 0){
+      const maxH = Math.min(560, window.innerHeight * 0.7);
+      const zx = (wrap.clientWidth * 0.92) / (region.w * w1);
+      const zy = (maxH * 0.92) / (region.h * h1);
+      z = Math.min(zx, zy);
+    }
+  }
+  z = Math.max(CAPTURE_ZOOM_MIN, Math.min(CAPTURE_ZOOM_MAX, Math.round(z / CAPTURE_ZOOM_STEP) * CAPTURE_ZOOM_STEP));
+  if(onlyIn) z = Math.max(z, captureZoom);
+  return z;
+}
+
+// Fait défiler l'aperçu pour centrer la zone surveillée dans la vue.
+function centerCaptureOnRegion(){
+  const wrap = document.getElementById('captureStageWrap');
+  const ov = document.getElementById('overlayCanvas');
+  const vid = document.getElementById('captureVideo');
+  if(!wrap || !ov || !vid || !ov.width) return;
+  const vr = getVideoRect(vid, ov);
+  const cxr = region ? region.x + region.w/2 : 0.5, cyr = region ? region.y + region.h/2 : 0.5;   // sans zone : milieu de l'image
+  const cx = vr.left + cxr * vr.width;
+  const cy = vr.top + cyr * vr.height;
+  const kx = ov.clientWidth ? ov.width / ov.clientWidth : 1, ky = ov.clientHeight ? ov.height / ov.clientHeight : 1;
+  wrap.scrollLeft = Math.max(0, cx / kx - wrap.clientWidth/2);
+  wrap.scrollTop = Math.max(0, cy / ky - wrap.clientHeight/2);
+}
+
 function sizeOverlay(){
   const stage = document.getElementById('captureStage');
   const overlay = document.getElementById('overlayCanvas');
@@ -4045,7 +4102,11 @@ function setupOverlay(){
       const w=Math.abs(end.x-selStart.x), h=Math.abs(end.y-selStart.y);
       if(w>0.02 && h>0.02){
         region={x,y,w,h};
+        try{ localStorage.setItem('ht-capture-region', JSON.stringify(region)); }catch(e){}
         baselineHash=null;
+        // Zone tracée : on agrandit automatiquement l'aperçu dessus pour la voir en grand.
+        const fit = computeAutoZoom(true);
+        if(fit > captureZoom){ setCaptureZoom(fit); pendingCenterRegion = true; setTimeout(()=>render(), 0); }
         const wrap=document.getElementById('autoSwitchWrap');
         if(wrap) wrap.style.cssText='';
         const st=document.getElementById('captureStatus');
@@ -4328,21 +4389,31 @@ function setupEventListeners(h){
   const zoomInBtn = document.getElementById('zoomInBtn');
   if(zoomInBtn){
     zoomInBtn.addEventListener('click', ()=>{
-      captureZoom = Math.min(CAPTURE_ZOOM_MAX, Math.round((captureZoom + CAPTURE_ZOOM_STEP)*100)/100);
+      setCaptureZoom(Math.min(CAPTURE_ZOOM_MAX, Math.round((captureZoom + CAPTURE_ZOOM_STEP)*100)/100));
+      pendingCenterRegion = !!region;
       render();
     });
   }
   const zoomOutBtn = document.getElementById('zoomOutBtn');
   if(zoomOutBtn){
     zoomOutBtn.addEventListener('click', ()=>{
-      captureZoom = Math.max(CAPTURE_ZOOM_MIN, Math.round((captureZoom - CAPTURE_ZOOM_STEP)*100)/100);
+      setCaptureZoom(Math.max(CAPTURE_ZOOM_MIN, Math.round((captureZoom - CAPTURE_ZOOM_STEP)*100)/100));
+      pendingCenterRegion = !!region;
       render();
     });
   }
   const zoomResetBtn = document.getElementById('zoomResetBtn');
   if(zoomResetBtn){
     zoomResetBtn.addEventListener('click', ()=>{
-      captureZoom = 1;
+      setCaptureZoom(1);
+      render();
+    });
+  }
+  const zoomAutoBtn = document.getElementById('zoomAutoBtn');
+  if(zoomAutoBtn){
+    zoomAutoBtn.addEventListener('click', ()=>{
+      setCaptureZoom(computeAutoZoom(false));
+      pendingCenterRegion = !!region;
       render();
     });
   }
