@@ -951,6 +951,8 @@
   .capture-hint{color:var(--text-dim);font-size:11px;margin-top:8px;line-height:1.5;}
   .capture-hint .k{color:var(--func);}
   .status-line{font-size:11px;color:var(--text-dim);margin-top:6px;}
+  /* Hauteur FIXE pour les textes qui changent à chaque détection : la page ne bouge plus. */
+  #captureStatus{height:2.9em;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;word-break:break-word;}
   .status-line.ok{color:var(--comment);}
   .status-line.warn{color:var(--number);}
   .status-line.err{color:var(--danger);}
@@ -1058,7 +1060,9 @@
 
   .ocr-result{margin-top:10px;padding:9px 10px;border:1px solid #2d718f!important;background:#081d2c!important;border-radius:10px!important;font-size:11px;line-height:1.5;}
   .ocr-result .detected{color:var(--type);font-weight:600;}
-  .ocr-result .raw{color:var(--text-dim);word-break:break-word;}
+  .ocr-result .raw{color:var(--text-dim);word-break:break-word;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;}
+  .ocr-result .detected{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #ocrResult{height:68px;box-sizing:border-box;overflow:hidden;}
   .ocr-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
   .target-badge{font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid var(--poke-yellow)!important;color:var(--poke-yellow)!important;background:rgba(255,212,71,.07);margin-left:6px;}
   .pity-card{background:linear-gradient(145deg,rgba(37,68,77,.7),rgba(11,38,51,.9))!important;border:1px solid #4d7d7b!important;border-radius:14px!important;padding:10px 12px;margin-top:10px;}
@@ -1475,6 +1479,7 @@ let state = { grandTotal: 0, activeHuntId: null, activePokemonId: null, hunts: [
   formTracker: { total:0, pityCurrent:0, pityMin:0, pityMax:0, pityLast:0, pityHits:0 },
   formShape: 'Summer',
   formEventActive: true,
+  encounterLog: [],
   ivHistory: [],
   bossCooldowns: {},
   megaStones: {},
@@ -2122,6 +2127,36 @@ function getRecommendedSetDetailsHtml(name, stats, abilities){
 
 let globalPokemonDatabase = [];
 const POKEAPI_LIST_URL = "https://pokeapi.co/api/v2/pokemon?limit=1025";
+// La liste ci-dessus ne contient QUE les formes de base (ids 1-1025). Les formes régionales
+// (zorua-hisui, vulpix-alola, ponyta-galar, wooper-paldea...) sont listées après (ids 10001+).
+const POKEAPI_FORMS_URL = "https://pokeapi.co/api/v2/pokemon?limit=1000&offset=1025";
+const REGIONAL_FORM_RE = /-(alola|galar|hisui|paldea)(-|$)/;
+const REGION_ADJ = { alolan:'alola', alola:'alola', galarian:'galar', galar:'galar', hisuian:'hisui', hisui:'hisui', paldean:'paldea', paldea:'paldea' };
+// "Hisuian Zorua" / "Zorua Hisuian" / "Zorua Hisui" / "zorua-hisui" -> "zorua-hisui" (ou null).
+function regionalSlugFromText(text){
+  const words = String(text||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/['’`]/g,'').replace(/[^a-z0-9\s-]/g,' ').split(/[\s-]+/).filter(Boolean);
+  const idx = words.findIndex(w => REGION_ADJ[w]);
+  if(idx < 0 || words.length < 2) return null;
+  const region = REGION_ADJ[words[idx]];
+  const rest = words.filter((_,i)=>i!==idx && words[i] !== 'breed');
+  if(!rest.length) return null;
+  // 1) Recherche dans la base, quel que soit l'ordre des mots : "Hisuian Zorua", "Zorua-Hisui",
+  //    "Paldean Tauros Blaze" (-> tauros-paldea-blaze-breed), "Galarian Darmanitan" (-> darmanitan-galar-standard).
+  const q = new Set(rest);
+  let best = null, bestExtra = 99;
+  for(const p of globalPokemonDatabase){
+    if(!REGIONAL_FORM_RE.test(p.name)) continue;
+    const pw = p.name.split('-').filter(w => w !== 'breed');
+    if(!pw.includes(region)) continue;
+    if(![...q].every(w => pw.includes(w))) continue;
+    const extra = pw.length - q.size - 1;
+    const penalty = extra * 10 + (/-(standard|combat)/.test(p.name) ? 0 : 1);   // à égalité : forme "standard" / "combat"
+    if(extra >= 0 && penalty < bestExtra){ best = p.name; bestExtra = penalty; }
+  }
+  if(best) return best;
+  // 2) Base pas (encore) chargée : forme naïve nom-région.
+  return rest.join('-') + '-' + region;
+}
 const SPRITE_BASE_URL = "https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/";
 const FALLBACK_SPRITE = "https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/items/poke-ball.png";
 const BALL_SPRITES = {
@@ -2182,12 +2217,21 @@ function getBestMatchingPokemonName(detectedName, threshold = 0.75) {
   if(nido === 'nidoran-f') return 'Nidoran-f';
   if(nido === 'nidoran-m') return 'Nidoran-m';
   if(nido === 'nidoran') return null;   // genre illisible : on ne devine pas
+
+  // Forme régionale écrite en toutes lettres ("Hisuian Zorua", "Zorua-Hisui"...) : on la cherche telle quelle.
+  const regional = regionalSlugFromText(cleanDetected);
+  if(regional){
+    const hit = globalPokemonDatabase.find(p => p.name === regional);
+    if(hit) return hit.name.charAt(0).toUpperCase() + hit.name.slice(1);
+  }
   
   let bestMatch = null;
   let highestScore = 0;
 
+  // "Mr. Mime" / "Mr Mime" -> "mr-mime" ; "Farfetch'd" -> "farfetchd" (même écriture que les noms PokeAPI)
+  const slugged = cleanDetected.replace(/['’`.]/g, '').replace(/\s+/g, '-');
   for (const poke of globalPokemonDatabase) {
-    const score = calculateSimilarity(cleanDetected, poke.name);
+    const score = Math.max(calculateSimilarity(cleanDetected, poke.name), calculateSimilarity(slugged, poke.name));
     if (score > highestScore) {
       highestScore = score;
       bestMatch = poke.name;
@@ -2214,6 +2258,7 @@ async function loadGlobalPokemonDatabase() {
       };
     }).filter(p => p.id !== null);
     addSpeciesAliasesToDatabase();
+    await addRegionalFormsToDatabase();
     globalPokemonDatabase.sort((a, b) => b.name.length - a.name.length);
   } catch (err) {
     console.error("Erreur de chargement de PokeAPI:", err);
@@ -2240,13 +2285,47 @@ function addSpeciesAliasesToDatabase(){
   globalPokemonDatabase.push(...extra);
 }
 
+async function addRegionalFormsToDatabase(){
+  try{
+    const res = await fetch(POKEAPI_FORMS_URL);
+    if(!res || !res.ok) return;
+    const data = await res.json();
+    const have = new Set(globalPokemonDatabase.map(p => p.name));
+    for(const p of (data.results || [])){
+      const name = String(p.name||'').toLowerCase();
+      if(!REGIONAL_FORM_RE.test(name) || have.has(name)) continue;
+      const m = String(p.url||'').match(/\/pokemon\/(\d+)\/?$/);
+      if(!m) continue;
+      have.add(name);
+      globalPokemonDatabase.push({ name, id: parseInt(m[1],10), types: [] });
+    }
+  }catch(err){ console.warn('Formes régionales indisponibles :', err); }
+}
+
 async function fetchCaptureRate(nameOrId) {
   try {
     const cleanName = String(nameOrId).toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
-    const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${cleanName}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return typeof data.capture_rate === 'number' ? data.capture_rate : null;
+    const getRate = async (slug) => {
+      const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${slug}`);
+      if (!res || !res.ok) return null;
+      const data = await res.json();
+      return typeof data.capture_rate === 'number' ? data.capture_rate : null;
+    };
+    let rate = await getRate(cleanName);
+    if (rate !== null) return rate;
+    // Formes (zorua-hisui, vulpix-alola, indeedee-male...) : la fiche "espèce" porte le nom de l'espèce.
+    // 1) on la lit depuis la fiche du Pokémon ; 2) à défaut, on retire le suffixe de forme.
+    try {
+      const pr = await fetch(`https://pokeapi.co/api/v2/pokemon/${cleanName}`);
+      if (pr && pr.ok) {
+        const pd = await pr.json();
+        const sp = pd && pd.species && pd.species.name;
+        if (sp && sp !== cleanName) { rate = await getRate(sp); if (rate !== null) return rate; }
+      }
+    } catch (e) {}
+    const base = cleanName.replace(REGIONAL_FORM_RE, '');
+    if (base && base !== cleanName) return await getRate(base);
+    return null;
   } catch (err) {
     return null;
   }
@@ -2510,6 +2589,7 @@ function normalizeState(){
   // Par defaut actif, pour ne rien changer au comportement existant tant que
   // l'utilisateur n'a pas explicitement decoche la case (aucun evenement en cours).
   state.formEventActive = state.formEventActive !== false;
+  if(!Array.isArray(state.encounterLog)) state.encounterLog = [];
 
   // Migration : si "formTrackers" (multi-forme) n'existe pas encore, on vient
   // de l'ancien systeme mono-forme -> on rapatrie les donnees existantes (qui
@@ -2860,6 +2940,28 @@ function formatDuration(ms){
   return `${pad(hh)}h${pad(mm)}min${pad(ss)}sec`;
 }
 
+function renderEncounterGaps(h){
+  const log = (state.encounterLog || []).filter(x => x.h === h.id);
+  const counts = log.filter(x => !x.undo);
+  if(!counts.length) return '';
+  const gaps = counts.map(x => x.gap).filter(g => g !== null && g >= 0);
+  const sus = counts.filter(x => x.gap !== null && x.gap < DOUBLE_COUNT_SEC*1000);
+  const fmt = ms => ms === null ? '—' : (ms/1000).toFixed(1) + ' s';
+  const sorted = gaps.slice().sort((a,b)=>a-b);
+  const median = sorted.length ? sorted[Math.floor(sorted.length/2)] : null;
+  const avg = gaps.length ? gaps.reduce((a,b)=>a+b,0)/gaps.length : null;
+  const rows = log.slice(-25).reverse().map(x => {
+    if(x.undo) return `<div style="display:flex;gap:10px;color:var(--text-dim);"><span style="width:62px;">${new Date(x.t).toLocaleTimeString('fr-FR')}</span><span>↩ annulé · ${escapeHtml(x.n||'')}</span></div>`;
+    const bad = x.gap !== null && x.gap < DOUBLE_COUNT_SEC*1000;
+    return `<div style="display:flex;gap:10px;${bad?'color:var(--danger);font-weight:600;':''}"><span style="width:62px;">${new Date(x.t).toLocaleTimeString('fr-FR')}</span><span style="width:70px;">${fmt(x.gap)}</span><span style="flex:1;">${escapeHtml(x.n||'')} · ${x.src==='auto'?'auto':'manuel'}${bad?' ⚠ doublon possible':''}</span></div>`;
+  }).join('');
+  return `<details style="margin:10px 0;padding:8px 12px;font-size:12px;border:1px solid var(--border,#2d6d8c);border-radius:10px;">
+    <summary style="cursor:pointer;">⏱ Intervalle entre comptages — ${counts.length} suivis · ${sus.length ? `<span style="color:var(--danger);">${sus.length} doublon(s) possible(s) (&lt; ${DOUBLE_COUNT_SEC} s)</span>` : '<span class="cm">aucun doublon</span>'} · médiane ${fmt(median)} · moyenne ${fmt(avg)}</summary>
+    <div style="margin-top:8px;font-family:monospace;font-size:11px;line-height:1.6;max-height:260px;overflow:auto;">${rows}</div>
+    <div style="color:var(--text-dim);font-size:10px;margin-top:6px;">Les 25 derniers comptages de cette chasse. Un écart sous ${DOUBLE_COUNT_SEC} s est signalé en rouge.</div>
+  </details>`;
+}
+
 function updateTimerDisplays(){
   const h = activeHunt();
   const running = !!autoDetectOn && isWindowActiveForTimer();
@@ -2952,10 +3054,31 @@ function restoreLastPity(h){
   h.lastEncounter=null;
 }
 
+// Journal horodaté des comptages : sert à repérer les doublons (deux comptages à quelques secondes d'écart).
+const DOUBLE_COUNT_SEC = 3;       // en dessous : doublon probable
+function recordEncounterTime(h, p, src){
+  if(!Array.isArray(state.encounterLog)) state.encounterLog = [];
+  const now = Date.now();
+  // Écart mesuré PAR CHASSE (un compte/une zone = une chasse) : alterner entre deux comptes ne déclenche pas d'alerte.
+  let prev = null;
+  for(let i = state.encounterLog.length - 1; i >= 0; i--){ if(state.encounterLog[i].h === h.id){ prev = state.encounterLog[i]; break; } }
+  const gapMs = prev && !prev.undo ? now - prev.t : null;
+  state.encounterLog.push({ t: now, h: h.id, p: p.id, n: p.name, src, gap: gapMs });
+  if(state.encounterLog.length > 3000) state.encounterLog.splice(0, state.encounterLog.length - 3000);
+  if(gapMs !== null && gapMs < DOUBLE_COUNT_SEC*1000){
+    showToast(`⚠ Comptage ${(gapMs/1000).toFixed(1)} s après le précédent — doublon possible`, ()=>undoLastEncounter(p.id));
+  }
+}
+function recordUndoTime(h, p){
+  if(!Array.isArray(state.encounterLog)) state.encounterLog = [];
+  state.encounterLog.push({ t: Date.now(), h: h.id, p: p.id, n: p.name, undo: true });
+}
+
 async function logEncounter(){
   const h = activeHunt();
   const p = activePokemon();
   if(!h || !p) return;
+  recordEncounterTime(h, p, 'manuel');
   registerPityEncounter(h, p);
   bumpGlobalPity();
   h.total++;
@@ -2972,6 +3095,7 @@ async function logEncounterByPokemon(pId) {
   if(!h) return;
   const p = h.pokemon.find(x => x.id === pId);
   if(!p) return;
+  recordEncounterTime(h, p, 'auto');
   registerPityEncounter(h, p);
   bumpGlobalPity();
   h.total++;
@@ -3531,6 +3655,22 @@ async function render(){
       </div>`;
   }).join('');
 
+  // Reconstruire la page ne doit JAMAIS faire bouger l'écran (détection auto = rendu à chaque rencontre) :
+  // on fige la hauteur et on mémorise le défilement de la page et de tous ses conteneurs.
+  const __scrolls = [];
+  for(let el = main; el; el = el.parentElement){ if(el.scrollTop || el.scrollLeft) __scrolls.push([el, el.scrollTop, el.scrollLeft]); }
+  const __winX = window.scrollX, __winY = window.scrollY;
+  const __innerScrolls = [...main.querySelectorAll('.capture-stage-wrap, #huntList')].map(el => [el.id || el.className, el.scrollTop, el.scrollLeft]);
+  const __prevH = main.offsetHeight;
+  if(__prevH) main.style.minHeight = __prevH + 'px';
+  const __restoreScroll = () => {
+    __scrolls.forEach(([el, t, l]) => { el.scrollTop = t; el.scrollLeft = l; });
+    window.scrollTo(__winX, __winY);
+    __innerScrolls.forEach(([key, t, l]) => {
+      const el = document.getElementById(key) || document.querySelector('.' + String(key).split(' ')[0]);
+      if(el){ el.scrollTop = t; el.scrollLeft = l; }
+    });
+  };
   main.innerHTML = `
     <div class="hunt-header">
       <div class="hunt-header-info">
@@ -3718,11 +3858,14 @@ async function render(){
       <button class="act danger-outline" id="removeEncounterBtn" style="font-size:14px;padding:12px 18px;">-1</button>
     </div>
 
+    ${renderEncounterGaps(h)}
     ${cards}
   `;
 
   setupEventListeners(h);
   updateTimerDisplays();
+  __restoreScroll();
+  requestAnimationFrame(() => { __restoreScroll(); requestAnimationFrame(() => { main.style.minHeight = ''; __restoreScroll(); }); });
 }
 
 async function startCapture(){
@@ -3952,9 +4095,15 @@ function findConfiguredPokemon(name){
     const all = h.pokemon.filter(x => /^nidoran-[fm]$/.test(nidoranSlugFromText(x.name) || ''));
     return all.length === 1 ? all[0] : null;
   }
+  name = regionalSlugFromText(name) || name;   // "Hisuian Zorua" -> "zorua-hisui"
   const n=normalizeText(name);
 
-  const candidates=h.pokemon.map(p=>({p,n:normalizeText(p.name)})).filter(x=>x.n);
+  // Formes régionales (Zorua / Zorua de Hisui, Vulpix / Vulpix d'Alola...) : espèces distinctes dans la chasse,
+  // on ne compare qu'entre noms de même région pour ne jamais compter l'une sur l'autre.
+  const regionOf = t => { const slug = regionalSlugFromText(t) || String(t||'').toLowerCase().trim().replace(/\s+/g,'-'); const m = REGIONAL_FORM_RE.exec(slug); return m ? m[1] : null; };
+  const wantRegion = regionOf(name);
+
+  const candidates=h.pokemon.map(p=>({p,n:normalizeText(p.name)})).filter(x=>x.n && regionOf(x.p.name) === wantRegion);
   candidates.sort((a,b)=>b.n.length-a.n.length);
   const exact = candidates.find(x=>n===x.n || n.includes(x.n) || x.n.includes(n))?.p;
   if (exact) return exact;
@@ -4108,6 +4257,7 @@ async function undoLastEncounter(pId){
   const h = activeHunt();
   const p = h && h.pokemon.find(x=>x.id===pId);
   if(!h || !p || p.total<=0) return;
+  recordUndoTime(h, p);
   p.total = Math.max(0, p.total-1);
   h.total = Math.max(0, h.total-1);
   unbumpGlobalPity();
@@ -4139,6 +4289,7 @@ function stopAutoDetect(){
 
 window.addEventListener('keydown', e=>{
   if(e.target.tagName==='INPUT' || e.target.tagName==='SELECT') return;
+  if(e.repeat) return;   // touche maintenue = répétition automatique : ne compte qu'une fois
   if(e.key==='e' || e.key==='E') logEncounter();
 });
 
@@ -6895,6 +7046,9 @@ async function dmgFetchPokemonData(slug){
 async function dmgResolvePokemonSlug(input){
   const nido = nidoranSlugFromText(input);
   if(nido) return { slug:nido, form:null, note:'' };   // "nidoran f" / "nidoran♂" / "nidoran" (ambigu, géré plus loin)
+  // Nom exact d'une forme déjà connue de la base (ex. "zorua-hisui", "tauros-paldea-blaze-breed") : on le prend tel quel.
+  const exactKey = String(input||'').toLowerCase().trim().replace(/\s+/g,'-');
+  if(REGIONAL_FORM_RE.test(exactKey) && globalPokemonDatabase.some(p => p.name === exactKey)) return { slug:exactKey, form:null, note:'' };
   const p = dmgParseTypedPokemonName(input);
   if(!p.rest.length) return { slug:'', form:null, note:'' };
   if(!p.region && !p.mega) return { slug:p.rest.join('-'), form:null, note:'' };
